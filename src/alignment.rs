@@ -30,9 +30,17 @@ mod tests {
 
     #[test]
     fn test_match() {
-        let aligner = Aligner::from("ACGT");
-        let alignment = aligner.align("ACGT");
-        assert_eq!(alignment.reference, "ACGT");
-        assert_eq!(alignment.subject, "ACGT");
+        let aligner = Aligner::from("AGCT");
+        let alignment = aligner.align("AGCT");
+        assert_eq!(alignment.reference, "AGCT");
+        assert_eq!(alignment.subject, "AGCT");
+    }
+
+    #[test]
+    fn test_mismatch() {
+        let aligner = Aligner::from("AGCT");
+        let alignment = aligner.align("AGAT");
+        assert_eq!(alignment.reference, "AGCT");
+        assert_eq!(alignment.subject, "AGAT");
     }
 }

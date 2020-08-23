@@ -8,13 +8,19 @@ impl<'a> Aligner<'a> {
     }
 
     fn align(&self, subject: &'a str) -> Alignment {
-        Alignment { reference: self.reference, subject }
+        Alignment::from(self.reference, subject)
     }
 }
 
 struct Alignment<'a> {
     reference: &'a str,
     subject: &'a str,
+}
+
+impl<'a> Alignment<'a> {
+    fn from(reference: &'a str, subject: &'a str) -> Self {
+        Alignment { reference, subject }
+    }
 }
 
 
@@ -25,7 +31,7 @@ mod tests {
     #[test]
     fn test_match() {
         let aligner = Aligner::from("ACGT");
-        let alignment: Alignment = aligner.align("ACGT");
+        let alignment = aligner.align("ACGT");
         assert_eq!(alignment.reference, "ACGT");
         assert_eq!(alignment.subject, "ACGT");
     }

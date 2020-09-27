@@ -27,7 +27,7 @@ impl<'a> Alignment<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::{Aligner, Alignment};
+    use super::{Aligner};
 
     #[test]
     fn test_match() {

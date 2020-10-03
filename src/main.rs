@@ -1,3 +1,4 @@
+mod alignment_config;
 mod alignment_mtx;
 mod needleman_wunsch_goto;
 mod alignment;

@@ -8,13 +8,13 @@ enum Pointer {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-struct Element {
+pub struct Element {
     score: f64,
     pointer: Pointer,
 }
 
 #[derive(Debug, PartialEq)]
-struct AlignmentMtx {
+pub struct AlignmentMtx {
     array: Array2D<Element>
 }
 

@@ -1,10 +1,10 @@
 use std::str::FromStr;
 
-trait AlignmentElement: FromStr {}
+pub trait AlignmentElement: FromStr {}
 
 impl AlignmentElement for char {}
 
-trait AlignmentConfig<S: AlignmentElement, R: AlignmentElement> {
+pub trait AlignmentConfig<S: AlignmentElement, R: AlignmentElement> {
     fn get_substitution_score(&self, pos: usize, s: S, r: R) -> f64;
 
     fn get_subject_gap_opening_penalty(&self, pos: usize) -> f64;
@@ -21,10 +21,10 @@ trait AlignmentConfig<S: AlignmentElement, R: AlignmentElement> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use crate::alignment_config::AlignmentConfig;
 
-    struct TestConfig {}
+    pub struct TestConfig {}
 
     impl AlignmentConfig<char, char> for TestConfig {
         fn get_substitution_score(&self, pos: usize, s: char, r: char) -> f64 {

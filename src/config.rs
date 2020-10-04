@@ -22,7 +22,7 @@ pub trait AlignmentConfig<S: AlignmentElement, R: AlignmentElement> {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::alignment_config::AlignmentConfig;
+    use crate::config::AlignmentConfig;
 
     pub struct TestConfig {}
 

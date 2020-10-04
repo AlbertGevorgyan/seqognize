@@ -1,9 +1,9 @@
-use crate::alignment_config::AlignmentConfig;
-use crate::dynamic_program::DynamicProgram;
+use crate::config::AlignmentConfig;
+use crate::aligner::Aligner;
 use crate::alignment_mtx::{AlignmentMtx, PointingScore};
 use crate::alignment::Alignment;
 
-struct NeedlemanWunschGotoProgram {}
+struct GlobalNtAligner {}
 
 struct NtAlignmentConfig {}
 
@@ -21,7 +21,7 @@ impl AlignmentConfig<char, char> for NtAlignmentConfig {
     }
 }
 
-impl DynamicProgram<char, char> for NeedlemanWunschGotoProgram {
+impl Aligner<char, char> for GlobalNtAligner {
     type Config = NtAlignmentConfig;
 
     fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {
@@ -52,17 +52,27 @@ impl DynamicProgram<char, char> for NeedlemanWunschGotoProgram {
 #[cfg(test)]
 mod tests {
     use crate::alignment::Alignment;
-    use crate::alignment_config::tests::TestConfig;
-    use crate::needleman_wunsch_goto::{NeedlemanWunschGotoProgram, NtAlignmentConfig};
-    use crate::dynamic_program::DynamicProgram;
+    use crate::config::tests::TestConfig;
+    use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
+    use crate::aligner::Aligner;
 
     #[test]
-    fn test_align() {
-        let p = NeedlemanWunschGotoProgram {};
+    fn test_match() {
+        let p = GlobalNtAligner {};
         let c = NtAlignmentConfig {};
         assert_eq!(
             p.align("AGCT", "AGCT", &c).score,
             4.0
+        )
+    }
+
+    #[test]
+    fn test_mismatch() {
+        let p = GlobalNtAligner {};
+        let c = NtAlignmentConfig {};
+        assert_eq!(
+            p.align("AGAT", "AGCT", &c).score,
+            2.0
         )
     }
 }

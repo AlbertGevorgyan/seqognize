@@ -1,7 +1,7 @@
-mod dynamic_program;
-mod alignment_config;
+mod aligner;
+mod config;
 mod alignment_mtx;
-mod needleman_wunsch_goto;
+mod nt_aligner;
 mod alignment;
 
 fn main() {

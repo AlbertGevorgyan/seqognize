@@ -1,8 +1,8 @@
 use crate::alignment::Alignment;
-use crate::alignment_config::{AlignmentConfig, AlignmentElement};
+use crate::config::{AlignmentConfig, AlignmentElement};
 use crate::alignment_mtx::{AlignmentMtx, PointingScore};
 
-pub trait DynamicProgram<S: AlignmentElement, R: AlignmentElement> {
+pub trait Aligner<S: AlignmentElement, R: AlignmentElement> {
     type Config: AlignmentConfig<S, R>;
 
     fn align<'a>(&self, subject: &'a str, reference: &'a str, config: &Self::Config) -> Alignment<'a> {

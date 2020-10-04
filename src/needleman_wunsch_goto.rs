@@ -1,6 +1,6 @@
 use crate::alignment_config::AlignmentConfig;
 use crate::dynamic_program::DynamicProgram;
-use crate::alignment_mtx::{AlignmentMtx, Element};
+use crate::alignment_mtx::{AlignmentMtx, PointingScore};
 use crate::alignment::Alignment;
 
 struct NeedlemanWunschGotoProgram {}
@@ -40,11 +40,11 @@ impl DynamicProgram<char, char> for NeedlemanWunschGotoProgram {
         unimplemented!()
     }
 
-    fn find_max(&self, mtx: &AlignmentMtx) -> Element {
+    fn find_max(&self, mtx: &AlignmentMtx) -> PointingScore {
         unimplemented!()
     }
 
-    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &Element) -> Alignment<'a> {
+    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &PointingScore) -> Alignment<'a> {
         unimplemented!()
     }
 }

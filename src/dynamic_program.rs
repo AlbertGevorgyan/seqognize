@@ -1,6 +1,6 @@
 use crate::alignment::Alignment;
 use crate::alignment_config::{AlignmentConfig, AlignmentElement};
-use crate::alignment_mtx::{AlignmentMtx, Element};
+use crate::alignment_mtx::{AlignmentMtx, PointingScore};
 
 pub trait DynamicProgram<S: AlignmentElement, R: AlignmentElement> {
     type Config: AlignmentConfig<S, R>;
@@ -10,7 +10,7 @@ pub trait DynamicProgram<S: AlignmentElement, R: AlignmentElement> {
         self.fill_top_row(&mtx, &config);
         self.fill_left_column(&mtx, &config);
         self.fill(&mtx, &config);
-        let max: Element = self.find_max(&mtx);
+        let max: PointingScore = self.find_max(&mtx);
         self.trace_back(&mtx, &max)
     }
 
@@ -22,8 +22,8 @@ pub trait DynamicProgram<S: AlignmentElement, R: AlignmentElement> {
 
     fn fill(&self, mtx: &AlignmentMtx, config: &Self::Config);
 
-    fn find_max(&self, mtx: &AlignmentMtx) -> Element;
+    fn find_max(&self, mtx: &AlignmentMtx) -> PointingScore;
 
-    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &Element) -> Alignment<'a>;
+    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &PointingScore) -> Alignment<'a>;
 }
 

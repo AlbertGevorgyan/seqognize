@@ -26,7 +26,7 @@ impl Aligner<char, char> for GlobalNtAligner {
     type Config = NtAlignmentConfig;
 
     fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {
-        AlignmentMtx::of(subject.len(), reference.len())
+        alignment_mtx::of(subject.len(), reference.len())
     }
 
     fn fill_top_row(&self, mtx: &AlignmentMtx, config: &Self::Config) {
@@ -57,7 +57,7 @@ impl Aligner<char, char> for GlobalNtAligner {
 mod tests {
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
     use crate::aligner::Aligner;
-    use crate::alignment_mtx::{AlignmentMtx, Pointer};
+    use crate::alignment_mtx::{Pointer};
     use crate::alignment_mtx;
 
     #[test]
@@ -65,23 +65,23 @@ mod tests {
         let aligner = GlobalNtAligner {};
         assert_eq!(
             aligner.create_mtx("ss", "rrr"),
-            AlignmentMtx::of(2, 3)
+            alignment_mtx::of(2, 3)
         )
     }
 
     #[test]
     fn test_fill_top_row() {
         let aligner = GlobalNtAligner {};
-        let mtx = AlignmentMtx::of(2, 3);
+        let mtx = alignment_mtx::of(2, 3);
         let config = NtAlignmentConfig {};
         aligner.fill_top_row(&mtx, &config);
         assert_eq!(
-            *mtx.get(0, 0),
-            AlignmentMtx::INITIAL_ELEMENT
+            *mtx.get(0, 0).unwrap(),
+            alignment_mtx::INITIAL_ELEMENT
         );
         assert_eq!(
-            *mtx.get(0, 1),
-            alignment_mtx::Element::of(1.0, Pointer::LEFT)
+            *mtx.get(0, 1).unwrap(),
+            alignment_mtx::element(1.0, Pointer::LEFT)
         );
     }
 

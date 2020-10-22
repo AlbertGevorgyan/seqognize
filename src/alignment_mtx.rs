@@ -1,34 +1,48 @@
 use array2d::Array2D;
+use delegate::delegate;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-enum Pointer {
+pub enum Pointer {
     LEFT,
     SUBST,
     UP,
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct PointingScore {
-    score: f64,
+pub struct Element {
+    pub score: f64,
     pointer: Pointer,
+}
+
+impl Element {
+    pub fn of(score: f64, pointer: Pointer) -> Self {
+        Element { score, pointer }
+    }
 }
 
 #[derive(Debug, PartialEq)]
 pub struct AlignmentMtx {
-    array: Array2D<PointingScore>
+    array: Array2D<Element>
 }
 
 impl AlignmentMtx {
-    pub const INITIAL_ELEMENT: PointingScore = PointingScore { score: 0.0, pointer: Pointer::SUBST };
+    pub const INITIAL_ELEMENT: Element = Element { score: 0.0, pointer: Pointer::SUBST };
     const OUT_OF_BOUNDS_MSG: &'static str = "Index is out of bounds.";
 
-    fn of(num_rows: usize, num_columns: usize) -> AlignmentMtx {
+    pub fn of(num_rows: usize, num_columns: usize) -> AlignmentMtx {
         AlignmentMtx {
             array: Array2D::filled_with(AlignmentMtx::INITIAL_ELEMENT, num_rows, num_columns)
         }
     }
 
-    fn get(&self, row_num: usize, column_num: usize) -> &PointingScore {
+    delegate! {
+        to self.array {
+            pub fn row_len(&self) -> usize;
+            pub fn row_iter(&self, row_index: usize) -> impl Iterator<Item = &Element>;
+        }
+    }
+
+    pub fn get(&self, row_num: usize, column_num: usize) -> &Element {
         self.array.get(row_num, column_num)
             .expect(AlignmentMtx::OUT_OF_BOUNDS_MSG)
     }
@@ -41,7 +55,7 @@ impl AlignmentMtx {
         self.get_by(row_num, column_num, |el| el.pointer)
     }
 
-    fn get_by<T, F: Fn(&PointingScore) -> T>(&self, row_num: usize, column_num: usize, getter: F) -> T {
+    fn get_by<T, F: Fn(&Element) -> T>(&self, row_num: usize, column_num: usize, getter: F) -> T {
         self.array.get(row_num, column_num)
             .map(getter)
             .expect(AlignmentMtx::OUT_OF_BOUNDS_MSG)
@@ -55,7 +69,7 @@ impl AlignmentMtx {
         self.set(row_num, column_num, |el| el.pointer = pointer);
     }
 
-    fn set<F: FnMut(&mut PointingScore)>(&mut self, row_num: usize, column_num: usize, setter: F) {
+    fn set<F: FnMut(&mut Element)>(&mut self, row_num: usize, column_num: usize, setter: F) {
         self.array.get_mut(row_num, column_num)
             .map(setter)
             .expect(AlignmentMtx::OUT_OF_BOUNDS_MSG);
@@ -64,17 +78,17 @@ impl AlignmentMtx {
 
 #[cfg(test)]
 mod tests {
-    use super::{Pointer, PointingScore, AlignmentMtx};
+    use super::{Pointer, Element, AlignmentMtx};
     use array2d::Array2D;
 
     #[test]
     fn test_element() {
         let score = 0.0;
         let pointer: Pointer = Pointer::LEFT;
-        let el = PointingScore { score, pointer };
-        assert_eq!(el, PointingScore { score: 0.0, pointer: Pointer::LEFT });
-        assert_ne!(el, PointingScore { score: 0.01, pointer: Pointer::LEFT });
-        assert_ne!(el, PointingScore { score: 0.01, pointer: Pointer::UP });
+        let el = Element { score, pointer };
+        assert_eq!(el, Element { score: 0.0, pointer: Pointer::LEFT });
+        assert_ne!(el, Element { score: 0.01, pointer: Pointer::LEFT });
+        assert_ne!(el, Element { score: 0.01, pointer: Pointer::UP });
     }
 
     #[test]
@@ -84,6 +98,15 @@ mod tests {
             AlignmentMtx {
                 array: Array2D::filled_with(AlignmentMtx::INITIAL_ELEMENT, 10, 5)
             }
+        )
+    }
+
+    #[test]
+    fn test_row_len() {
+        let mtx: AlignmentMtx = AlignmentMtx::of(10, 5);
+        assert_eq!(
+            mtx.array.row_len(),
+            5
         )
     }
 

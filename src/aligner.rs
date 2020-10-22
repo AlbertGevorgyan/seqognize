@@ -1,6 +1,7 @@
 use crate::alignment::Alignment;
 use crate::config::{AlignmentConfig, AlignmentElement};
-use crate::alignment_mtx::{AlignmentMtx, PointingScore};
+use crate::alignment_mtx::{AlignmentMtx, Element};
+use crate::alignment_mtx;
 
 pub trait Aligner<S: AlignmentElement, R: AlignmentElement> {
     type Config: AlignmentConfig<S, R>;
@@ -10,7 +11,7 @@ pub trait Aligner<S: AlignmentElement, R: AlignmentElement> {
         self.fill_top_row(&mtx, &config);
         self.fill_left_column(&mtx, &config);
         self.fill(&mtx, &config);
-        let max: PointingScore = self.find_max(&mtx);
+        let max: Element = self.find_max(&mtx);
         self.trace_back(&mtx, &max)
     }
 
@@ -22,8 +23,8 @@ pub trait Aligner<S: AlignmentElement, R: AlignmentElement> {
 
     fn fill(&self, mtx: &AlignmentMtx, config: &Self::Config);
 
-    fn find_max(&self, mtx: &AlignmentMtx) -> PointingScore;
+    fn find_max(&self, mtx: &AlignmentMtx) -> alignment_mtx::Element;
 
-    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &PointingScore) -> Alignment<'a>;
+    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &alignment_mtx::Element) -> Alignment<'a>;
 }
 

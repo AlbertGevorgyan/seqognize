@@ -11,14 +11,24 @@ pub enum Pointer {
 #[derive(Debug, PartialEq, Clone)]
 pub struct Element {
     pub score: f64,
-    pointer: Pointer,
+    pub pointer: Pointer,
 }
 
 pub fn element(score: f64, pointer: Pointer) -> Element {
     Element { score, pointer }
 }
 
+pub trait ScoreMtx {
+    fn put(&mut self, row: usize, column: usize, score: f64, pointer: Pointer);
+}
+
 pub type AlignmentMtx = Array2D<Element>;
+
+impl ScoreMtx for AlignmentMtx {
+    fn put(&mut self, row: usize, column: usize, score: f64, pointer: Pointer) {
+        self.set(row, column, element(score, pointer));
+    }
+}
 
 pub const INITIAL_ELEMENT: Element = Element { score: 0.0, pointer: Pointer::SUBST };
 const OUT_OF_BOUNDS_MSG: &'static str = "Index is out of bounds.";

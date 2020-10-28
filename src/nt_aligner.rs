@@ -1,6 +1,6 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::Aligner;
-use crate::alignment_mtx::{AlignmentMtx, Pointer, ScoreMtx};
+use crate::alignment_mtx::{AlignmentMtx, Pointer, element};
 use crate::alignment::Alignment;
 use crate::alignment_mtx;
 
@@ -34,18 +34,26 @@ impl Aligner<char, char> for GlobalNtAligner {
 
     fn fill_top_row(&self, mtx: &mut AlignmentMtx, config: &Self::Config) {
         let mut gaps = 0.0;
-        for i in 1..mtx.num_columns() {
-            gaps += config.get_subject_gap_opening_penalty(i);
-            mtx.put(0, i, gaps, Pointer::LEFT);
-        }
+        mtx.row_mut(0)
+            .iter_mut()
+            .skip(1)
+            .enumerate()
+            .for_each(|(i, el)| {
+                gaps += config.get_subject_gap_opening_penalty(i);
+                *el = element(gaps, Pointer::LEFT);
+            });
     }
 
     fn fill_left_column(&self, mtx: &mut AlignmentMtx, config: &Self::Config) {
         let mut gaps = 0.0;
-        for i in 1..mtx.num_rows() {
-            gaps += config.get_reference_gap_extension_penalty(i);
-            mtx.put(i, 0, gaps, Pointer::UP);
-        }
+        mtx.column_mut(0)
+            .iter_mut()
+            .skip(1)
+            .enumerate()
+            .for_each(|(i, el)| {
+                gaps += config.get_reference_gap_opening_penalty(i);
+                *el = element(gaps, Pointer::UP);
+            });
     }
 
     fn fill(&self, mtx: &AlignmentMtx, config: &Self::Config) {
@@ -87,12 +95,12 @@ mod tests {
         };
         aligner.fill_top_row(&mut mtx, &config);
         assert_eq!(
-            *mtx.get(0, 0).unwrap(),
+            *mtx.get((0, 0)).unwrap(),
             alignment_mtx::INITIAL_ELEMENT
         );
         for i in 1..3 {
             assert_eq!(
-                *mtx.get(0, i).unwrap(),
+                *mtx.get((0, i)).unwrap(),
                 alignment_mtx::element(i as f64, Pointer::LEFT)
             );
         }
@@ -108,12 +116,12 @@ mod tests {
         };
         aligner.fill_left_column(&mut mtx, &config);
         assert_eq!(
-            *mtx.get(0, 0).unwrap(),
+            *mtx.get((0, 0)).unwrap(),
             alignment_mtx::INITIAL_ELEMENT
         );
         for i in 1..3 {
             assert_eq!(
-                *mtx.get(i, 0).unwrap(),
+                *mtx.get((i, 0)).unwrap(),
                 alignment_mtx::element(i as f64, Pointer::UP)
             );
         }

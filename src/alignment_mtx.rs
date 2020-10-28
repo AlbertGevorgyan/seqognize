@@ -1,5 +1,5 @@
-use array2d::Array2D;
 use crate::alignment_mtx;
+use ndarray::Array2;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Pointer {
@@ -18,23 +18,13 @@ pub fn element(score: f64, pointer: Pointer) -> Element {
     Element { score, pointer }
 }
 
-pub trait ScoreMtx {
-    fn put(&mut self, row: usize, column: usize, score: f64, pointer: Pointer);
-}
-
-pub type AlignmentMtx = Array2D<Element>;
-
-impl ScoreMtx for AlignmentMtx {
-    fn put(&mut self, row: usize, column: usize, score: f64, pointer: Pointer) {
-        self.set(row, column, element(score, pointer));
-    }
-}
+pub type AlignmentMtx = Array2<Element>;
 
 pub const INITIAL_ELEMENT: Element = Element { score: 0.0, pointer: Pointer::SUBST };
 const OUT_OF_BOUNDS_MSG: &'static str = "Index is out of bounds.";
 
 pub fn of(num_rows: usize, num_columns: usize) -> AlignmentMtx {
-    AlignmentMtx::filled_with(alignment_mtx::INITIAL_ELEMENT, num_rows, num_columns)
+    AlignmentMtx::from_elem((num_rows, num_columns), alignment_mtx::INITIAL_ELEMENT)
 }
 
 

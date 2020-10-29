@@ -4,8 +4,6 @@ use crate::alignment_mtx::{AlignmentMtx, Pointer, element};
 use crate::alignment::Alignment;
 use crate::alignment_mtx;
 
-struct GlobalNtAligner {}
-
 struct NtAlignmentConfig {
     subject_gap: f64,
     reference_gap: f64,
@@ -23,6 +21,10 @@ impl AlignmentConfig for NtAlignmentConfig {
     }
 }
 
+struct GlobalNtAligner {
+    config: NtAlignmentConfig
+}
+
 impl Aligner for GlobalNtAligner {
     type Config = NtAlignmentConfig;
 
@@ -30,31 +32,31 @@ impl Aligner for GlobalNtAligner {
         alignment_mtx::of(subject.len(), reference.len())
     }
 
-    fn fill_top_row(&self, mtx: &mut AlignmentMtx, config: &Self::Config) {
+    fn fill_top_row(&self, mtx: &mut AlignmentMtx) {
         let mut gaps = 0.0;
         mtx.row_mut(0)
             .iter_mut()
             .skip(1)
             .enumerate()
             .for_each(|(i, el)| {
-                gaps += config.get_subject_gap_opening_penalty(i);
+                gaps += self.config.get_subject_gap_opening_penalty(i);
                 *el = element(gaps, Pointer::LEFT);
             });
     }
 
-    fn fill_left_column(&self, mtx: &mut AlignmentMtx, config: &Self::Config) {
+    fn fill_left_column(&self, mtx: &mut AlignmentMtx) {
         let mut gaps = 0.0;
         mtx.column_mut(0)
             .iter_mut()
             .skip(1)
             .enumerate()
             .for_each(|(i, el)| {
-                gaps += config.get_reference_gap_opening_penalty(i);
+                gaps += self.config.get_reference_gap_opening_penalty(i);
                 *el = element(gaps, Pointer::UP);
             });
     }
 
-    fn fill(&self, mtx: &AlignmentMtx, config: &Self::Config) {
+    fn fill(&self, mtx: &AlignmentMtx) {
         unimplemented!()
     }
 
@@ -74,24 +76,25 @@ mod tests {
     use crate::alignment_mtx::{Pointer};
     use crate::alignment_mtx;
 
+    const ALIGNER: GlobalNtAligner = GlobalNtAligner {
+        config: NtAlignmentConfig {
+            subject_gap: 1.0,
+            reference_gap: 1.0,
+        }
+    };
+
     #[test]
     fn test_create_mtx() {
-        let aligner = GlobalNtAligner {};
         assert_eq!(
-            aligner.create_mtx("ss", "rrr"),
+            ALIGNER.create_mtx("ss", "rrr"),
             alignment_mtx::of(2, 3)
         )
     }
 
     #[test]
     fn test_fill_top_row() {
-        let aligner = GlobalNtAligner {};
         let mut mtx = alignment_mtx::of(2, 3);
-        let config = NtAlignmentConfig {
-            subject_gap: 1.0,
-            reference_gap: 1.0,
-        };
-        aligner.fill_top_row(&mut mtx, &config);
+        ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
             alignment_mtx::INITIAL_ELEMENT
@@ -106,13 +109,8 @@ mod tests {
 
     #[test]
     fn test_fill_left_column() {
-        let aligner = GlobalNtAligner {};
         let mut mtx = alignment_mtx::of(3, 2);
-        let config = NtAlignmentConfig {
-            subject_gap: 1.0,
-            reference_gap: 1.0,
-        };
-        aligner.fill_left_column(&mut mtx, &config);
+        ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
             alignment_mtx::INITIAL_ELEMENT
@@ -127,26 +125,16 @@ mod tests {
 
     #[test]
     fn test_match() {
-        let aligner = GlobalNtAligner {};
-        let config = NtAlignmentConfig {
-            subject_gap: 1.0,
-            reference_gap: 1.0,
-        };
         assert_eq!(
-            aligner.align("AGCT", "AGCT", &config).score,
+            ALIGNER.align("AGCT", "AGCT").score,
             4.0
         )
     }
 
     #[test]
     fn test_mismatch() {
-        let aligner = GlobalNtAligner {};
-        let config = NtAlignmentConfig {
-            subject_gap: 1.0,
-            reference_gap: 1.0,
-        };
         assert_eq!(
-            aligner.align("AGAT", "AGCT", &config).score,
+            ALIGNER.align("AGAT", "AGCT").score,
             2.0
         )
     }

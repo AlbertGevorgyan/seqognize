@@ -1,10 +1,10 @@
 use crate::alignment::Alignment;
-use crate::config::{AlignmentConfig, AlignmentElement};
+use crate::config::{AlignmentConfig};
 use crate::alignment_mtx::{AlignmentMtx, Element};
 use crate::alignment_mtx;
 
-pub trait Aligner<S: AlignmentElement, R: AlignmentElement> {
-    type Config: AlignmentConfig<S, R>;
+pub trait Aligner {
+    type Config: AlignmentConfig;
 
     fn align<'a>(&self, subject: &'a str, reference: &'a str, config: &Self::Config) -> Alignment<'a> {
         let mut mtx: AlignmentMtx = self.create_mtx(subject, reference);

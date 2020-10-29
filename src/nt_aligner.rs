@@ -11,21 +11,19 @@ struct NtAlignmentConfig {
     reference_gap: f64,
 }
 
-impl AlignmentConfig<char, char> for NtAlignmentConfig {
+impl AlignmentConfig for NtAlignmentConfig {
     fn get_substitution_score(&self, pos: usize, s: char, r: char) -> f64 {
         unimplemented!()
     }
-
     fn get_subject_gap_opening_penalty(&self, pos: usize) -> f64 {
         self.subject_gap
     }
-
     fn get_reference_gap_opening_penalty(&self, pos: usize) -> f64 {
         self.reference_gap
     }
 }
 
-impl Aligner<char, char> for GlobalNtAligner {
+impl Aligner for GlobalNtAligner {
     type Config = NtAlignmentConfig;
 
     fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {

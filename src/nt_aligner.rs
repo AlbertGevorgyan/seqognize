@@ -1,6 +1,6 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::Aligner;
-use crate::alignment_mtx::{AlignmentMtx, Pointer, element};
+use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, element};
 use crate::alignment::Alignment;
 use crate::alignment_mtx;
 
@@ -56,8 +56,13 @@ impl Aligner for GlobalNtAligner {
             });
     }
 
-    fn fill(&self, mtx: &AlignmentMtx) {
-        unimplemented!()
+    fn fill(&self, mtx: &mut AlignmentMtx) {
+        for row in 1..mtx.num_rows() {
+            for col in 1..mtx.num_columns() {
+                let up = mtx[(row, col - 1)].score - self.config.get_reference_gap_opening_penalty(row);
+                let left = mtx[(row - 1, col)].score - self.config.get_subject_gap_opening_penalty(col);
+            }
+        }
     }
 
     fn find_max(&self, mtx: &AlignmentMtx) -> alignment_mtx::Element {
@@ -73,7 +78,7 @@ impl Aligner for GlobalNtAligner {
 mod tests {
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
     use crate::aligner::Aligner;
-    use crate::alignment_mtx::{Pointer};
+    use crate::alignment_mtx::{Pointer, element};
     use crate::alignment_mtx;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
@@ -121,6 +126,27 @@ mod tests {
                 alignment_mtx::element(i as f64, Pointer::UP)
             );
         }
+    }
+
+    #[test]
+    fn test_fill() {
+        let mut mtx = alignment_mtx::from_elements(
+            &[
+                [
+                    element(0.0, Pointer::SUBST),
+                    element(-1.0, Pointer::LEFT)
+                ],
+                [
+                    element(-1.0, Pointer::UP),
+                    element(0.0, Pointer::SUBST)
+                ]
+            ]
+        );
+        ALIGNER.fill(&mut mtx);
+        assert_eq!(
+            *mtx.get((1, 1)).unwrap(),
+            element(1.0, Pointer::SUBST)
+        );
     }
 
     #[test]

@@ -1,5 +1,5 @@
 use crate::alignment_mtx;
-use ndarray::Array2;
+use ndarray::{Array2, arr2, FixedInitializer};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Pointer {
@@ -18,7 +18,22 @@ pub fn element(score: f64, pointer: Pointer) -> Element {
     Element { score, pointer }
 }
 
+pub trait Mtx {
+    fn num_rows(&self) -> usize;
+    fn num_columns(&self) -> usize;
+}
+
 pub type AlignmentMtx = Array2<Element>;
+
+impl Mtx for AlignmentMtx {
+    fn num_rows(&self) -> usize {
+        self.dim().0
+    }
+
+    fn num_columns(&self) -> usize {
+        self.dim().1
+    }
+}
 
 pub const INITIAL_ELEMENT: Element = Element { score: 0.0, pointer: Pointer::SUBST };
 const OUT_OF_BOUNDS_MSG: &'static str = "Index is out of bounds.";
@@ -27,10 +42,15 @@ pub fn of(num_rows: usize, num_columns: usize) -> AlignmentMtx {
     AlignmentMtx::from_elem((num_rows, num_columns), alignment_mtx::INITIAL_ELEMENT)
 }
 
+pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> AlignmentMtx
+    where V: Clone {
+    arr2(&elements)
+}
 
 #[cfg(test)]
 mod tests {
-    use super::{Pointer, Element};
+    use super::{Mtx, Pointer, Element};
+    use crate::alignment_mtx::of;
 
     #[test]
     fn test_element() {
@@ -40,5 +60,18 @@ mod tests {
         assert_eq!(el, Element { score: 0.0, pointer: Pointer::LEFT });
         assert_ne!(el, Element { score: 0.01, pointer: Pointer::LEFT });
         assert_ne!(el, Element { score: 0.01, pointer: Pointer::UP });
+    }
+
+    #[test]
+    fn test_dimensions() {
+        let mtx = of(3, 2);
+        assert_eq!(
+            mtx.num_rows(),
+            3
+        );
+        assert_eq!(
+            mtx.num_columns(),
+            2
+        );
     }
 }

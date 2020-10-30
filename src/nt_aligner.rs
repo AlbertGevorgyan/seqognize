@@ -1,6 +1,6 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::Aligner;
-use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, element};
+use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, Element, element};
 use crate::alignment::Alignment;
 use crate::alignment_mtx;
 
@@ -71,12 +71,8 @@ impl Aligner for GlobalNtAligner {
                     &mtx[(row - 1, col)]
                         .minus(self.config.get_subject_gap_opening_penalty(col))
                 ];
-                let best = selection.iter()
-                    .fold(
-                        selection[0],
-                        |el1, el2| if el1.score > el2.score { el1 } else { el2 },
-                    );
-                mtx[(row, col)].copy(best);
+                let best = GlobalNtAligner::max_score(selection);
+                mtx[(row, col)] = *best;
             }
         }
     }
@@ -89,6 +85,7 @@ impl Aligner for GlobalNtAligner {
         unimplemented!()
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -179,5 +176,15 @@ mod tests {
             ALIGNER.align("AGAT", "AGCT").score,
             2.0
         )
+    }
+}
+
+impl GlobalNtAligner {
+    fn max_score(selection: [&Element; 3]) -> &Element {
+        selection.iter()
+            .fold(
+                selection[0],
+                |el1, el2| if el1.score > el2.score { el1 } else { el2 },
+            )
     }
 }

@@ -8,7 +8,7 @@ pub enum Pointer {
     UP,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Element {
     pub score: f64,
     pub pointer: Pointer,
@@ -25,11 +25,6 @@ impl Element {
 
     pub fn minus(&self, cost: f64) -> Self {
         element(self.score - cost, self.pointer)
-    }
-
-    pub fn copy(&mut self, other: &Self) {
-        self.score = other.score;
-        self.pointer = other.pointer;
     }
 }
 
@@ -75,10 +70,6 @@ mod tests {
         assert_eq!(el, Element { score: 0.0, pointer: Pointer::LEFT });
         assert_eq!(el.plus(1.0), Element { score: 1.0, pointer: Pointer::LEFT });
         assert_eq!(el.minus(1.0), Element { score: -1.0, pointer: Pointer::LEFT });
-
-        let other = element(2.0, Pointer::SUBST);
-        el.copy(&other);
-        assert_eq!(el, other);
     }
 
     #[test]

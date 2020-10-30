@@ -63,16 +63,16 @@ impl Aligner for GlobalNtAligner {
             for col in 1..mtx.num_columns() {
                 mtx[(row, col)] = *max_score(
                     &[
-                        &mtx[(row, col - 1)]
-                            .minus(self.config.get_reference_gap_opening_penalty(row)),
-                        &mtx[(row - 1, col - 1)]
-                            .plus(self.config.get_substitution_score(
-                                (row, col),
-                                ss.next().unwrap(),
-                                rs.next().unwrap()
-                            )),
-                        &mtx[(row - 1, col)]
-                            .minus(self.config.get_subject_gap_opening_penalty(col))
+                        &(mtx[(row, col - 1)] - self.config.get_reference_gap_opening_penalty(row)),
+                        &(
+                            mtx[(row - 1, col - 1)] +
+                                self.config.get_substitution_score(
+                                    (row, col),
+                                    ss.next().unwrap(),
+                                    rs.next().unwrap(),
+                                )
+                        ),
+                        &(mtx[(row - 1, col)] - self.config.get_subject_gap_opening_penalty(col))
                     ]
                 ).unwrap();
             }

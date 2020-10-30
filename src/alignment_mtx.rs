@@ -1,5 +1,6 @@
 use crate::alignment_mtx;
 use ndarray::{Array2, arr2, FixedInitializer};
+use std::ops::{Add, Sub};
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Pointer {
@@ -18,13 +19,19 @@ pub fn element(score: f64, pointer: Pointer) -> Element {
     Element { score, pointer }
 }
 
-impl Element {
-    pub fn plus(&self, cost: f64) -> Self {
-        element(self.score + cost, self.pointer)
-    }
+impl Add<f64> for Element {
+    type Output = Self;
 
-    pub fn minus(&self, cost: f64) -> Self {
-        element(self.score - cost, self.pointer)
+    fn add(self, score: f64) -> Self::Output {
+        element(self.score + score, self.pointer)
+    }
+}
+
+impl Sub<f64> for Element {
+    type Output = Element;
+
+    fn sub(self, cost: f64) -> Self::Output {
+        self + -cost
     }
 }
 
@@ -82,8 +89,8 @@ mod tests {
         let pointer: Pointer = Pointer::LEFT;
         let mut el = Element { score, pointer };
         assert_eq!(el, Element { score: 0.0, pointer: Pointer::LEFT });
-        assert_eq!(el.plus(1.0), Element { score: 1.0, pointer: Pointer::LEFT });
-        assert_eq!(el.minus(1.0), Element { score: -1.0, pointer: Pointer::LEFT });
+        assert_eq!(el + 1.0, Element { score: 1.0, pointer: Pointer::LEFT });
+        assert_eq!(el - 1.0, Element { score: -1.0, pointer: Pointer::LEFT });
     }
 
     #[test]

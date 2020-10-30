@@ -10,7 +10,7 @@ struct NtAlignmentConfig {
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
-    fn get_substitution_score(&self, pos: usize, s: char, r: char) -> f64 {
+    fn get_substitution_score(&self, pos: (usize, usize), s: char, r: char) -> f64 {
         unimplemented!()
     }
     fn get_subject_gap_opening_penalty(&self, pos: usize) -> f64 {
@@ -56,27 +56,27 @@ impl Aligner for GlobalNtAligner {
             });
     }
 
-    fn fill(&self, mtx: &mut AlignmentMtx) {
+    fn fill(&self, mtx: &mut AlignmentMtx, subject: &str, reference: &str) {
+        let mut ss = subject.chars();
+        let mut rs = reference.chars();
         for row in 1..mtx.num_rows() {
             for col in 1..mtx.num_columns() {
+                let s = ss.next().unwrap();
+                let r = rs.next().unwrap();
                 let selection = [
-                    &mtx[(row, col - 1)],
-                    &mtx[(row - 1, col - 1)],
+                    &mtx[(row, col - 1)]
+                        .minus(self.config.get_reference_gap_opening_penalty(row)),
+                    &mtx[(row - 1, col - 1)]
+                        .plus(self.config.get_substitution_score((row, col), s, r)),
                     &mtx[(row - 1, col)]
+                        .minus(self.config.get_subject_gap_opening_penalty(col))
                 ];
                 let best = selection.iter()
                     .fold(
                         selection[0],
-                        |el1, el2| {
-                            if el1.score > el2.score {
-                                el1
-                            } else {
-                                el2
-                            }
-                        },
+                        |el1, el2| if el1.score > el2.score { el1 } else { el2 },
                     );
-                let up = mtx[(row, col - 1)].score - self.config.get_reference_gap_opening_penalty(row);
-                let left = mtx[(row - 1, col)].score - self.config.get_subject_gap_opening_penalty(col);
+                mtx[(row, col)].copy(best);
             }
         }
     }
@@ -158,7 +158,7 @@ mod tests {
                 ]
             ]
         );
-        ALIGNER.fill(&mut mtx);
+        ALIGNER.fill(&mut mtx, "A", "A");
         assert_eq!(
             *mtx.get((1, 1)).unwrap(),
             element(1.0, Pointer::SUBST)

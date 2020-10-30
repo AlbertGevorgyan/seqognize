@@ -10,7 +10,7 @@ pub trait Aligner {
         let mut mtx: AlignmentMtx = self.create_mtx(subject, reference);
         self.fill_top_row(&mut mtx);
         self.fill_left_column(&mut mtx);
-        self.fill(&mut mtx);
+        self.fill(&mut mtx, &subject, &reference);
         let max: Element = self.find_max(&mtx);
         self.trace_back(&mtx, &max)
     }
@@ -21,7 +21,7 @@ pub trait Aligner {
 
     fn fill_left_column(&self, mtx: &mut AlignmentMtx);
 
-    fn fill(&self, mtx: &mut AlignmentMtx);
+    fn fill(&self, mtx: &mut AlignmentMtx, subject: &str, reference: &str);
 
     fn find_max(&self, mtx: &AlignmentMtx) -> alignment_mtx::Element;
 

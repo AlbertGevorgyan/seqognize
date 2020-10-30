@@ -18,6 +18,21 @@ pub fn element(score: f64, pointer: Pointer) -> Element {
     Element { score, pointer }
 }
 
+impl Element {
+    pub fn plus(&self, cost: f64) -> Self {
+        element(self.score + cost, self.pointer)
+    }
+
+    pub fn minus(&self, cost: f64) -> Self {
+        element(self.score - cost, self.pointer)
+    }
+
+    pub fn copy(&mut self, other: &Self) {
+        self.score = other.score;
+        self.pointer = other.pointer;
+    }
+}
+
 pub trait Mtx {
     fn num_rows(&self) -> usize;
     fn num_columns(&self) -> usize;
@@ -50,16 +65,20 @@ pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Align
 #[cfg(test)]
 mod tests {
     use super::{Mtx, Pointer, Element};
-    use crate::alignment_mtx::of;
+    use crate::alignment_mtx::{of, element};
 
     #[test]
     fn test_element() {
         let score = 0.0;
         let pointer: Pointer = Pointer::LEFT;
-        let el = Element { score, pointer };
+        let mut el = Element { score, pointer };
         assert_eq!(el, Element { score: 0.0, pointer: Pointer::LEFT });
-        assert_ne!(el, Element { score: 0.01, pointer: Pointer::LEFT });
-        assert_ne!(el, Element { score: 0.01, pointer: Pointer::UP });
+        assert_eq!(el.plus(1.0), Element { score: 1.0, pointer: Pointer::LEFT });
+        assert_eq!(el.minus(1.0), Element { score: -1.0, pointer: Pointer::LEFT });
+
+        let other = element(2.0, Pointer::SUBST);
+        el.copy(&other);
+        assert_eq!(el, other);
     }
 
     #[test]

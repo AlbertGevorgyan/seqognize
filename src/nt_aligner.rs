@@ -59,6 +59,22 @@ impl Aligner for GlobalNtAligner {
     fn fill(&self, mtx: &mut AlignmentMtx) {
         for row in 1..mtx.num_rows() {
             for col in 1..mtx.num_columns() {
+                let selection = [
+                    &mtx[(row, col - 1)],
+                    &mtx[(row - 1, col - 1)],
+                    &mtx[(row - 1, col)]
+                ];
+                let best = selection.iter()
+                    .fold(
+                        selection[0],
+                        |el1, el2| {
+                            if el1.score > el2.score {
+                                el1
+                            } else {
+                                el2
+                            }
+                        },
+                    );
                 let up = mtx[(row, col - 1)].score - self.config.get_reference_gap_opening_penalty(row);
                 let left = mtx[(row - 1, col)].score - self.config.get_subject_gap_opening_penalty(col);
             }

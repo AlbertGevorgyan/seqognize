@@ -28,6 +28,20 @@ impl Element {
     }
 }
 
+pub fn max_score<'a>(elements: &'a [&Element]) -> Option<&'a Element> {
+    if elements.is_empty() {
+        None
+    } else {
+        Some(
+            elements.iter()
+                .fold(
+                    elements[0],
+                    |el1, el2| if el1.score > el2.score { el1 } else { el2 },
+                )
+        )
+    }
+}
+
 pub trait Mtx {
     fn num_rows(&self) -> usize;
     fn num_columns(&self) -> usize;
@@ -60,7 +74,7 @@ pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Align
 #[cfg(test)]
 mod tests {
     use super::{Mtx, Pointer, Element};
-    use crate::alignment_mtx::{of, element};
+    use crate::alignment_mtx::{of};
 
     #[test]
     fn test_element() {

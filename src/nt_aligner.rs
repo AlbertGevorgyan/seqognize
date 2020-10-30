@@ -1,8 +1,8 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::Aligner;
-use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, Element, element};
+use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, element, max_score};
 use crate::alignment::Alignment;
-use crate::alignment_mtx;
+use crate::{alignment_mtx};
 
 struct NtAlignmentConfig {
     subject_gap: f64,
@@ -61,18 +61,20 @@ impl Aligner for GlobalNtAligner {
         let mut rs = reference.chars();
         for row in 1..mtx.num_rows() {
             for col in 1..mtx.num_columns() {
-                let s = ss.next().unwrap();
-                let r = rs.next().unwrap();
-                let selection = [
-                    &mtx[(row, col - 1)]
-                        .minus(self.config.get_reference_gap_opening_penalty(row)),
-                    &mtx[(row - 1, col - 1)]
-                        .plus(self.config.get_substitution_score((row, col), s, r)),
-                    &mtx[(row - 1, col)]
-                        .minus(self.config.get_subject_gap_opening_penalty(col))
-                ];
-                let best = GlobalNtAligner::max_score(selection);
-                mtx[(row, col)] = *best;
+                mtx[(row, col)] = *max_score(
+                    &[
+                        &mtx[(row, col - 1)]
+                            .minus(self.config.get_reference_gap_opening_penalty(row)),
+                        &mtx[(row - 1, col - 1)]
+                            .plus(self.config.get_substitution_score(
+                                (row, col),
+                                ss.next().unwrap(),
+                                rs.next().unwrap()
+                            )),
+                        &mtx[(row - 1, col)]
+                            .minus(self.config.get_subject_gap_opening_penalty(col))
+                    ]
+                ).unwrap();
             }
         }
     }
@@ -176,15 +178,5 @@ mod tests {
             ALIGNER.align("AGAT", "AGCT").score,
             2.0
         )
-    }
-}
-
-impl GlobalNtAligner {
-    fn max_score(selection: [&Element; 3]) -> &Element {
-        selection.iter()
-            .fold(
-                selection[0],
-                |el1, el2| if el1.score > el2.score { el1 } else { el2 },
-            )
     }
 }

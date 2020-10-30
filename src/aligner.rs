@@ -27,4 +27,3 @@ pub trait Aligner {
 
     fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &alignment_mtx::Element) -> Alignment<'a>;
 }
-

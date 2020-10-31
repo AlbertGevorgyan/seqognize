@@ -68,20 +68,24 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             for col in 1..mtx.num_columns() {
                 mtx[(row, col)] = *max_score(
                     &[
-                        &Insertion(mtx[(row, col - 1)].score().unwrap() -
-                            self.config.get_reference_gap_opening_penalty(row)),
+                        &Insertion(
+                            mtx[(row, col - 1)].score() -
+                                self.config.get_reference_gap_opening_penalty(row)
+                        ),
                         &Substitution(
-                            mtx[(row - 1, col - 1)].score().unwrap() +
+                            mtx[(row - 1, col - 1)].score() +
                                 self.config.get_substitution_score(
                                     (row, col),
                                     ss.next().unwrap(),
                                     rs.next().unwrap(),
                                 )
                         ),
-                        &Deletion(mtx[(row - 1, col)].score().unwrap()
-                            - self.config.get_subject_gap_opening_penalty(col))
+                        &Deletion(
+                            mtx[(row - 1, col)].score() -
+                                self.config.get_subject_gap_opening_penalty(col),
+                        )
                     ]
-                ).unwrap();
+                );
             }
         }
     }

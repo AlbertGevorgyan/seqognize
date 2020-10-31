@@ -1,5 +1,6 @@
 use ndarray::{Array2, FixedInitializer, arr2};
-use crate::matrix::Element::{Initial, Start, Insertion, Deletion, Substitution};
+use crate::matrix::Element::{Start, Insertion, Deletion, Substitution, Initial};
+use std::f64::NAN;
 
 pub type FScore = f64;
 
@@ -13,27 +14,21 @@ pub enum Element {
 }
 
 impl Element {
-    pub fn score(&self) -> Option<FScore> {
+    pub fn score(&self) -> FScore {
         return match self {
-            Initial => None,
-            Start => Some(0.0),
-            Insertion(score) | Deletion(score) | Substitution(score) => Some(*score),
+            Initial => NAN,
+            Start => 0.0,
+            Insertion(score) | Deletion(score) | Substitution(score) => *score
         };
     }
 }
 
-pub fn max_score<'a>(elements: &'a [&Element]) -> Option<&'a Element> {
-    if elements.is_empty() {
-        None
-    } else {
-        Some(
-            elements.iter()
-                .fold(
-                    elements[0],
-                    |el1, el2| if el1.score().unwrap() > el2.score().unwrap() { el1 } else { el2 },
-                )
+pub fn max_score<'a>(elements: &'a [&Element]) -> &'a Element {
+    elements.iter()
+        .fold(
+            elements[0],
+            |el1, el2| if el1.score() > el2.score() { el1 } else { el2 },
         )
-    }
 }
 
 pub trait Columnar {
@@ -64,27 +59,28 @@ pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Matri
 
 #[cfg(test)]
 mod tests {
-    use super::{Element, Columnar};
+    use super::{Columnar};
     use crate::matrix;
+    use crate::matrix::Element::{Initial, Start, Substitution};
 
     #[test]
     fn test_scores() {
-        let initial = Element::Initial;
-        assert_eq!(
+        let initial = Initial;
+        assert_ne!(
             initial.score(),
-            None
+            initial.score()
         );
 
-        let start = Element::Start;
+        let start = Start;
         assert_eq!(
             start.score(),
-            Some(0.0)
+            0.0
         );
 
-        let substitution = Element::Substitution(1.0);
+        let substitution = Substitution(1.0);
         assert_eq!(
             substitution.score(),
-            Some(1.0)
+            1.0
         );
     }
 

@@ -6,19 +6,21 @@ use crate::matrix;
 use crate::matrix::Element::{Deletion, Insertion, Substitution};
 
 struct NtAlignmentConfig {
-    subject_gap: FScore,
-    reference_gap: FScore,
+    match_score: FScore,
+    mismatch_penalty: FScore,
+    subject_gap_penalty: FScore,
+    reference_gap_penalty: FScore,
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
     fn get_substitution_score(&self, pos: (usize, usize), s: char, r: char) -> FScore {
-        unimplemented!()
+        if s == r { self.match_score } else { self.mismatch_penalty }
     }
     fn get_subject_gap_opening_penalty(&self, pos: usize) -> FScore {
-        self.subject_gap
+        self.subject_gap_penalty
     }
     fn get_reference_gap_opening_penalty(&self, pos: usize) -> FScore {
-        self.reference_gap
+        self.reference_gap_penalty
     }
 }
 
@@ -66,24 +68,18 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         let mut rs = reference.chars();
         for row in 1..mtx.num_rows() {
             for col in 1..mtx.num_columns() {
+                let substitution_score = self.config.get_substitution_score(
+                    (row, col),
+                    ss.next().unwrap(),
+                    rs.next().unwrap(),
+                );
+                let insertion_penalty = self.config.get_reference_gap_opening_penalty(row);
+                let deletion_penalty = self.config.get_subject_gap_opening_penalty(col);
                 mtx[(row, col)] = *max_score(
                     &[
-                        &Insertion(
-                            mtx[(row, col - 1)].score() -
-                                self.config.get_reference_gap_opening_penalty(row)
-                        ),
-                        &Substitution(
-                            mtx[(row - 1, col - 1)].score() +
-                                self.config.get_substitution_score(
-                                    (row, col),
-                                    ss.next().unwrap(),
-                                    rs.next().unwrap(),
-                                )
-                        ),
-                        &Deletion(
-                            mtx[(row - 1, col)].score() -
-                                self.config.get_subject_gap_opening_penalty(col),
-                        )
+                        &Substitution(mtx[(row - 1, col - 1)].score() + substitution_score),
+                        &Insertion(mtx[(row, col - 1)].score() + insertion_penalty),
+                        &Deletion(mtx[(row - 1, col)].score() + deletion_penalty)
                     ]
                 );
             }
@@ -106,12 +102,14 @@ mod tests {
     use crate::aligner::Aligner;
     use crate::matrix::Element::{Substitution, Deletion, Insertion, Initial, Start};
     use crate::matrix;
-    use crate::matrix::FScore;
+    use crate::matrix::{FScore};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
-            subject_gap: 1.0,
-            reference_gap: 1.0,
+            match_score: 1.0,
+            mismatch_penalty: -1.0,
+            subject_gap_penalty: -1.0,
+            reference_gap_penalty: -1.0,
         }
     };
 
@@ -134,7 +132,7 @@ mod tests {
         for i in 1..3 {
             assert_eq!(
                 *mtx.get((0, i)).unwrap(),
-                Insertion(i as FScore)
+                Insertion(-(i as FScore))
             );
         }
     }
@@ -150,13 +148,13 @@ mod tests {
         for i in 1..3 {
             assert_eq!(
                 *mtx.get((i, 0)).unwrap(),
-                Deletion(i as FScore)
+                Deletion(-(i as FScore))
             );
         }
     }
 
     #[test]
-    fn test_fill() {
+    fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
                 [
@@ -173,6 +171,27 @@ mod tests {
         assert_eq!(
             *mtx.get((1, 1)).unwrap(),
             Substitution(1.0)
+        );
+    }
+
+    #[test]
+    fn test_fill_with_mismatch() {
+        let mut mtx = matrix::from_elements(
+            &[
+                [
+                    Start,
+                    Insertion(-1.0)
+                ],
+                [
+                    Deletion(-1.0),
+                    Substitution(0.0)
+                ]
+            ]
+        );
+        ALIGNER.fill(&mut mtx, "A", "G");
+        assert_eq!(
+            *mtx.get((1, 1)).unwrap(),
+            Substitution(-1.0)
         );
     }
 

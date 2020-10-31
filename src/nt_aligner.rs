@@ -25,13 +25,13 @@ struct GlobalNtAligner {
     config: NtAlignmentConfig
 }
 
-impl Aligner for GlobalNtAligner {
-    type Config = NtAlignmentConfig;
-
-    fn new(config: Self::Config) -> Self {
+impl From<NtAlignmentConfig> for GlobalNtAligner {
+    fn from(config: NtAlignmentConfig) -> Self {
         GlobalNtAligner { config }
     }
+}
 
+impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {
         alignment_mtx::of(subject.len(), reference.len())
     }

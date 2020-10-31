@@ -3,11 +3,8 @@ use crate::config::{AlignmentConfig};
 use crate::alignment_mtx::{AlignmentMtx, Element};
 use crate::alignment_mtx;
 
-pub trait Aligner {
-    type Config: AlignmentConfig;
-
-    fn new(config: Self::Config) -> Self;
-
+pub trait Aligner<C>: From<C>
+    where C: AlignmentConfig {
     fn align<'a>(&self, subject: &'a str, reference: &'a str) -> Alignment<'a> {
         let mut mtx: AlignmentMtx = self.create_mtx(subject, reference);
         self.fill_top_row(&mut mtx);

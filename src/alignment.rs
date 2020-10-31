@@ -2,7 +2,7 @@
 pub struct Alignment<'a> {
     reference: &'a str,
     subject: &'a str,
-    pub(crate) score: f64,
+    pub score: f64,
 }
 
 impl<'a> Alignment<'a> {

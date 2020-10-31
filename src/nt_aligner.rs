@@ -28,6 +28,10 @@ struct GlobalNtAligner {
 impl Aligner for GlobalNtAligner {
     type Config = NtAlignmentConfig;
 
+    fn new(config: Self::Config) -> Self {
+        GlobalNtAligner { config }
+    }
+
     fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {
         alignment_mtx::of(subject.len(), reference.len())
     }

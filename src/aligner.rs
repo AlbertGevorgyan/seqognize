@@ -6,6 +6,8 @@ use crate::alignment_mtx;
 pub trait Aligner {
     type Config: AlignmentConfig;
 
+    fn new(config: Self::Config) -> Self;
+
     fn align<'a>(&self, subject: &'a str, reference: &'a str) -> Alignment<'a> {
         let mut mtx: AlignmentMtx = self.create_mtx(subject, reference);
         self.fill_top_row(&mut mtx);

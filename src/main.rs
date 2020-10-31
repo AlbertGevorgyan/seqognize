@@ -1,3 +1,4 @@
+mod matrix;
 mod aligner;
 mod config;
 mod alignment_mtx;

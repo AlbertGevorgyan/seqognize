@@ -1,22 +1,23 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::Aligner;
-use crate::alignment_mtx::{Mtx, AlignmentMtx, Pointer, element, max_score};
 use crate::alignment::Alignment;
-use crate::{alignment_mtx};
+use crate::matrix::{Matrix, Element, Columnar, max_score, FScore};
+use crate::matrix;
+use crate::matrix::Element::{Deletion, Insertion, Substitution};
 
 struct NtAlignmentConfig {
-    subject_gap: f64,
-    reference_gap: f64,
+    subject_gap: FScore,
+    reference_gap: FScore,
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
-    fn get_substitution_score(&self, pos: (usize, usize), s: char, r: char) -> f64 {
+    fn get_substitution_score(&self, pos: (usize, usize), s: char, r: char) -> FScore {
         unimplemented!()
     }
-    fn get_subject_gap_opening_penalty(&self, pos: usize) -> f64 {
+    fn get_subject_gap_opening_penalty(&self, pos: usize) -> FScore {
         self.subject_gap
     }
-    fn get_reference_gap_opening_penalty(&self, pos: usize) -> f64 {
+    fn get_reference_gap_opening_penalty(&self, pos: usize) -> FScore {
         self.reference_gap
     }
 }
@@ -32,11 +33,11 @@ impl From<NtAlignmentConfig> for GlobalNtAligner {
 }
 
 impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
-    fn create_mtx(&self, subject: &str, reference: &str) -> AlignmentMtx {
-        alignment_mtx::of(subject.len(), reference.len())
+    fn create_mtx(&self, subject: &str, reference: &str) -> Matrix {
+        matrix::of(subject.len(), reference.len())
     }
 
-    fn fill_top_row(&self, mtx: &mut AlignmentMtx) {
+    fn fill_top_row(&self, mtx: &mut Matrix) {
         let mut gaps = 0.0;
         mtx.row_mut(0)
             .iter_mut()
@@ -44,11 +45,11 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             .enumerate()
             .for_each(|(i, el)| {
                 gaps += self.config.get_subject_gap_opening_penalty(i);
-                *el = element(gaps, Pointer::LEFT);
+                *el = Insertion(gaps);
             });
     }
 
-    fn fill_left_column(&self, mtx: &mut AlignmentMtx) {
+    fn fill_left_column(&self, mtx: &mut Matrix) {
         let mut gaps = 0.0;
         mtx.column_mut(0)
             .iter_mut()
@@ -56,38 +57,40 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             .enumerate()
             .for_each(|(i, el)| {
                 gaps += self.config.get_reference_gap_opening_penalty(i);
-                *el = element(gaps, Pointer::UP);
+                *el = Deletion(gaps);
             });
     }
 
-    fn fill(&self, mtx: &mut AlignmentMtx, subject: &str, reference: &str) {
+    fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
         let mut ss = subject.chars();
         let mut rs = reference.chars();
         for row in 1..mtx.num_rows() {
             for col in 1..mtx.num_columns() {
                 mtx[(row, col)] = *max_score(
                     &[
-                        &(mtx[(row, col - 1)] - self.config.get_reference_gap_opening_penalty(row)),
-                        &(
-                            mtx[(row - 1, col - 1)] +
+                        &Insertion(mtx[(row, col - 1)].score().unwrap() -
+                            self.config.get_reference_gap_opening_penalty(row)),
+                        &Substitution(
+                            mtx[(row - 1, col - 1)].score().unwrap() +
                                 self.config.get_substitution_score(
                                     (row, col),
                                     ss.next().unwrap(),
                                     rs.next().unwrap(),
                                 )
                         ),
-                        &(mtx[(row - 1, col)] - self.config.get_subject_gap_opening_penalty(col))
+                        &Deletion(mtx[(row - 1, col)].score().unwrap()
+                            - self.config.get_subject_gap_opening_penalty(col))
                     ]
                 ).unwrap();
             }
         }
     }
 
-    fn find_max(&self, mtx: &AlignmentMtx) -> alignment_mtx::Element {
+    fn find_max(&self, mtx: &Matrix) -> Element {
         unimplemented!()
     }
 
-    fn trace_back<'a>(&self, mtx: &AlignmentMtx, max: &alignment_mtx::Element) -> Alignment<'a> {
+    fn trace_back<'a>(&self, mtx: &Matrix, max: &Element) -> Alignment<'a> {
         unimplemented!()
     }
 }
@@ -97,8 +100,9 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
 mod tests {
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
     use crate::aligner::Aligner;
-    use crate::alignment_mtx::{Pointer, element};
-    use crate::alignment_mtx;
+    use crate::matrix::Element::{Substitution, Deletion, Insertion, Initial, Start};
+    use crate::matrix;
+    use crate::matrix::FScore;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -111,60 +115,60 @@ mod tests {
     fn test_create_mtx() {
         assert_eq!(
             ALIGNER.create_mtx("ss", "rrr"),
-            alignment_mtx::of(2, 3)
+            matrix::of(2, 3)
         )
     }
 
     #[test]
     fn test_fill_top_row() {
-        let mut mtx = alignment_mtx::of(2, 3);
+        let mut mtx = matrix::of(2, 3);
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            alignment_mtx::INITIAL_ELEMENT
+            Initial
         );
         for i in 1..3 {
             assert_eq!(
                 *mtx.get((0, i)).unwrap(),
-                alignment_mtx::element(i as f64, Pointer::LEFT)
+                Insertion(i as FScore)
             );
         }
     }
 
     #[test]
     fn test_fill_left_column() {
-        let mut mtx = alignment_mtx::of(3, 2);
+        let mut mtx = matrix::of(3, 2);
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            alignment_mtx::INITIAL_ELEMENT
+            Initial
         );
         for i in 1..3 {
             assert_eq!(
                 *mtx.get((i, 0)).unwrap(),
-                alignment_mtx::element(i as f64, Pointer::UP)
+                Deletion(i as FScore)
             );
         }
     }
 
     #[test]
     fn test_fill() {
-        let mut mtx = alignment_mtx::from_elements(
+        let mut mtx = matrix::from_elements(
             &[
                 [
-                    element(0.0, Pointer::SUBST),
-                    element(-1.0, Pointer::LEFT)
+                    Start,
+                    Insertion(-1.0)
                 ],
                 [
-                    element(-1.0, Pointer::UP),
-                    element(0.0, Pointer::SUBST)
+                    Deletion(-1.0),
+                    Substitution(0.0)
                 ]
             ]
         );
         ALIGNER.fill(&mut mtx, "A", "A");
         assert_eq!(
             *mtx.get((1, 1)).unwrap(),
-            element(1.0, Pointer::SUBST)
+            Substitution(1.0)
         );
     }
 

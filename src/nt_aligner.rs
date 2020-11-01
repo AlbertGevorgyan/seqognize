@@ -51,7 +51,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             .enumerate()
             .for_each(|(i, el)| {
                 gaps += self.config.get_subject_gap_opening_penalty(i);
-                *el = Insertion(gaps);
+                *el = Deletion(gaps);
             });
     }
 
@@ -63,7 +63,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             .enumerate()
             .for_each(|(i, el)| {
                 gaps += self.config.get_reference_gap_opening_penalty(i);
-                *el = Deletion(gaps);
+                *el = Insertion(gaps);
             });
     }
 
@@ -80,8 +80,8 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 mtx[(row, col)] = *max_score(
                     &[
                         &Substitution(mtx[(row - 1, col - 1)].score() + substitution_score),
-                        &Insertion(mtx[(row, col - 1)].score() + insertion_penalty),
-                        &Deletion(mtx[(row - 1, col)].score() + deletion_penalty)
+                        &Insertion(mtx[(row - 1, col)].score() + insertion_penalty),
+                        &Deletion(mtx[(row, col - 1)].score() + deletion_penalty)
                     ]
                 );
             }
@@ -102,19 +102,19 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             let (row, column) = cursor;
             cursor = match mtx[(row, column)] {
                 Substitution(score) => {
-                    aligned_subject.insert(0, ss.next().unwrap());
-                    aligned_reference.insert(0, rs.next().unwrap());
+                    aligned_subject.insert(0, ss.next().expect("ref fail"));
+                    aligned_reference.insert(0, rs.next().expect("subj fail"));
                     (row - 1, column - 1)
                 }
                 Insertion(score) => {
                     aligned_subject.insert(0, ss.next().unwrap());
                     aligned_reference.insert(0, '_');
-                    (row, column - 1)
+                    (row - 1, column)
                 }
                 Deletion(score) => {
                     aligned_subject.insert(0, '_');
                     aligned_reference.insert(0, rs.next().unwrap());
-                    (row - 1, column)
+                    (row, column - 1)
                 }
                 _ => unreachable!()
             };
@@ -161,7 +161,7 @@ mod tests {
         for i in 1..3 {
             assert_eq!(
                 mtx[(0, i)],
-                Insertion(-(i as FScore))
+                Deletion(-(i as FScore))
             );
         }
     }
@@ -177,7 +177,7 @@ mod tests {
         for i in 1..3 {
             assert_eq!(
                 mtx[(i, 0)],
-                Deletion(-(i as FScore))
+                Insertion(-(i as FScore))
             );
         }
     }
@@ -186,8 +186,8 @@ mod tests {
     fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
-                [Start, Insertion(-1.0)],
-                [Deletion(-1.0), Substitution(0.0)]
+                [Start, Deletion(-1.0)],
+                [Insertion(-1.0), Substitution(0.0)]
             ]
         );
         ALIGNER.fill(&mut mtx, "A", "A");
@@ -201,8 +201,8 @@ mod tests {
     fn test_trace_back_snp() {
         let mut mtx = matrix::from_elements(
             &[
-                [Start, Insertion(-1.0)],
-                [Deletion(-1.0), Substitution(1.0)]
+                [Start, Deletion(-1.0)],
+                [Insertion(-1.0), Substitution(1.0)]
             ]
         );
         assert_eq!(
@@ -212,29 +212,29 @@ mod tests {
     }
 
     #[test]
-    fn test_trace_back_deletion() {
+    fn test_trace_back_insertion() {
         let mut mtx = matrix::from_elements(
             &[
                 [Start],
-                [Deletion(-1.0)]
+                [Insertion(-1.0)]
             ]
         );
         assert_eq!(
-            ALIGNER.trace_back(&mtx, (1, 0), "", "A"),
-            Alignment::from("_".to_string(), "A".to_string(), -1.0)
+            ALIGNER.trace_back(&mtx, (1, 0), "A", ""),
+            Alignment::from("A".to_string(), "_".to_string(), -1.0)
         );
     }
 
     #[test]
-    fn test_trace_back_insertion() {
+    fn test_trace_back_deletion() {
         let mut mtx = matrix::from_elements(
             &[
-                [Start, Insertion(-1.0)]
+                [Start, Deletion(-1.0)]
             ]
         );
         assert_eq!(
-            ALIGNER.trace_back(&mtx, (0, 1), "A", "_"),
-            Alignment::from("A".to_string(), "_".to_string(), -1.0)
+            ALIGNER.trace_back(&mtx, (0, 1), "", "A"),
+            Alignment::from("_".to_string(), "A".to_string(), -1.0)
         );
     }
 
@@ -251,6 +251,86 @@ mod tests {
         assert_eq!(
             ALIGNER.align("AGAT", "AGCT"),
             Alignment::from("AGAT".to_string(), "AGCT".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_insertion() {
+        assert_eq!(
+            ALIGNER.align("AGCT", "AGT"),
+            Alignment::from("AGCT".to_string(), "AG_T".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_deletion() {
+        assert_eq!(
+            ALIGNER.align("AGT", "AGCT"),
+            Alignment::from("AG_T".to_string(), "AGCT".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_double_insertion() {
+        assert_eq!(
+            ALIGNER.align("AGCT", "AT"),
+            Alignment::from("AGCT".to_string(), "A__T".to_string(), 0.0)
+        )
+    }
+
+    #[test]
+    fn test_double_deletion() {
+        assert_eq!(
+            ALIGNER.align("AT", "AGCT"),
+            Alignment::from("A__T".to_string(), "AGCT".to_string(), 0.0)
+        )
+    }
+
+    #[test]
+    fn test_leading_insertion() {
+        assert_eq!(
+            ALIGNER.align("AGCT", "GCT"),
+            Alignment::from("AGCT".to_string(), "_GCT".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_leading_deletion() {
+        assert_eq!(
+            ALIGNER.align("GCT", "AGCT"),
+            Alignment::from("_GCT".to_string(), "AGCT".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_trailing_insertion() {
+        assert_eq!(
+            ALIGNER.align("AGCT", "AGC"),
+            Alignment::from("AGCT".to_string(), "AGC_".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_trailing_deletion() {
+        assert_eq!(
+            ALIGNER.align("AGC", "AGCT"),
+            Alignment::from("AGC_".to_string(), "AGCT".to_string(), 2.0)
+        )
+    }
+
+    #[test]
+    fn test_two_insertions() {
+        assert_eq!(
+            ALIGNER.align("AGCT", "GT"),
+            Alignment::from("AGCT".to_string(), "_G_T".to_string(), 0.0)
+        )
+    }
+
+    #[test]
+    fn test_two_deletions() {
+        assert_eq!(
+            ALIGNER.align("AC", "AGCT"),
+            Alignment::from("A_C_".to_string(), "AGCT".to_string(), 0.0)
         )
     }
 }

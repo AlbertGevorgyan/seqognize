@@ -1,12 +1,12 @@
 #[derive(Debug, PartialEq)]
-pub struct Alignment<'a> {
-    reference: &'a str,
-    subject: &'a str,
+pub struct Alignment {
+    subject: String,
+    reference: String,
     pub score: f64,
 }
 
-impl<'a> Alignment<'a> {
-    pub fn from(reference: &'a str, subject: &'a str, score: f64) -> Self {
+impl Alignment {
+    pub fn from(subject: String, reference: String, score: f64) -> Self {
         Alignment { reference, subject, score }
     }
 }

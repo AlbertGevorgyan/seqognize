@@ -1,17 +1,19 @@
 use crate::alignment::Alignment;
 use crate::config::{AlignmentConfig};
-use crate::matrix::{Matrix, Element};
+use crate::matrix::{Matrix};
+
+pub type Idx = (usize, usize);
 
 pub trait Aligner<C>: From<C>
     where C: AlignmentConfig {
-    fn align<'a>(&self, subject: &'a str, reference: &'a str) -> Alignment<'a> {
+    fn align<'a>(&self, subject: &str, reference: &str) -> Alignment {
         let mut mtx: Matrix = self.create_mtx(subject, reference);
         self.fill_start(&mut mtx);
         self.fill_top_row(&mut mtx);
         self.fill_left_column(&mut mtx);
         self.fill(&mut mtx, &subject, &reference);
-        let max: &Element = self.find_max(&mtx);
-        self.trace_back(&mtx, &max)
+        let end_idx: (usize, usize) = self.end_idx(&mtx);
+        self.trace_back(&mtx, end_idx, &subject, &reference)
     }
 
     fn create_mtx(&self, subject: &str, reference: &str) -> Matrix;
@@ -24,7 +26,7 @@ pub trait Aligner<C>: From<C>
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str);
 
-    fn find_max<'a>(&self, mtx: &'a Matrix) -> &'a Element;
+    fn end_idx(&self, mtx: &Matrix) -> Idx;
 
-    fn trace_back<'a>(&self, mtx: &Matrix, max: &Element) -> Alignment<'a>;
+    fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment;
 }

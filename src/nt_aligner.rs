@@ -1,5 +1,5 @@
 use crate::config::AlignmentConfig;
-use crate::aligner::Aligner;
+use crate::aligner::{Aligner, Idx};
 use crate::alignment::Alignment;
 use crate::matrix::{Matrix, Element, Columnar, max_score, FScore};
 use crate::matrix;
@@ -88,20 +88,38 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         }
     }
 
-    fn find_max<'a>(&self, mtx: &'a Matrix) -> &'a Element {
-        &mtx[(mtx.num_rows() - 1, mtx.num_columns() - 1)]
+    fn end_idx(&self, mtx: &Matrix) -> Idx {
+        (mtx.num_rows() - 1, mtx.num_columns() - 1)
     }
 
-    fn trace_back<'a>(&self, mtx: &Matrix, max: &Element) -> Alignment<'a> {
-        // let row = mtx.num_rows();
-        // let column = mtx.num_columns();
-        // let previous: Element = match max {
-        //     Substitution(score) => mtx[(row - 1, column - 1)],
-        //     Insertion(score) => mtx[(row - 1, column)],
-        //     Deletion(score) => mtx[(row - 1, column)],
-        //     _ => Initial
-        // };
-        Alignment::from("", "", max.score())
+    fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
+        let mut ss = subject.chars().rev();
+        let mut rs = reference.chars().rev();
+        let mut aligned_subject = String::new();
+        let mut aligned_reference = String::new();
+        let mut cursor = end_index;
+        while cursor != (0, 0) {
+            let (row, column) = cursor;
+            cursor = match mtx[(row, column)] {
+                Substitution(score) => {
+                    aligned_subject.insert(0, ss.next().unwrap());
+                    aligned_reference.insert(0, rs.next().unwrap());
+                    (row - 1, column - 1)
+                }
+                Insertion(score) => {
+                    aligned_subject.insert(0, ss.next().unwrap());
+                    aligned_reference.insert(0, '_');
+                    (row, column - 1)
+                }
+                Deletion(score) => {
+                    aligned_subject.insert(0, '_');
+                    aligned_reference.insert(0, rs.next().unwrap());
+                    (row - 1, column)
+                }
+                _ => unreachable!()
+            };
+        }
+        Alignment::from(aligned_subject, aligned_reference, mtx[end_index].score())
     }
 }
 
@@ -113,6 +131,7 @@ mod tests {
     use crate::matrix::Element::{Substitution, Deletion, Insertion, Initial, Start};
     use crate::matrix;
     use crate::matrix::{FScore};
+    use crate::alignment::Alignment;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -167,14 +186,8 @@ mod tests {
     fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
-                [
-                    Start,
-                    Insertion(-1.0)
-                ],
-                [
-                    Deletion(-1.0),
-                    Substitution(0.0)
-                ]
+                [Start, Insertion(-1.0)],
+                [Deletion(-1.0), Substitution(0.0)]
             ]
         );
         ALIGNER.fill(&mut mtx, "A", "A");
@@ -185,39 +198,59 @@ mod tests {
     }
 
     #[test]
-    fn test_fill_with_mismatch() {
+    fn test_trace_back_snp() {
         let mut mtx = matrix::from_elements(
             &[
-                [
-                    Start,
-                    Insertion(-1.0)
-                ],
-                [
-                    Deletion(-1.0),
-                    Substitution(0.0)
-                ]
+                [Start, Insertion(-1.0)],
+                [Deletion(-1.0), Substitution(1.0)]
             ]
         );
-        ALIGNER.fill(&mut mtx, "A", "G");
         assert_eq!(
-            mtx[(1, 1)],
-            Substitution(-1.0)
+            ALIGNER.trace_back(&mtx, (1, 1), "A", "A"),
+            Alignment::from("A".to_string(), "A".to_string(), 1.0)
+        );
+    }
+
+    #[test]
+    fn test_trace_back_deletion() {
+        let mut mtx = matrix::from_elements(
+            &[
+                [Start],
+                [Deletion(-1.0)]
+            ]
+        );
+        assert_eq!(
+            ALIGNER.trace_back(&mtx, (1, 0), "", "A"),
+            Alignment::from("_".to_string(), "A".to_string(), -1.0)
+        );
+    }
+
+    #[test]
+    fn test_trace_back_insertion() {
+        let mut mtx = matrix::from_elements(
+            &[
+                [Start, Insertion(-1.0)]
+            ]
+        );
+        assert_eq!(
+            ALIGNER.trace_back(&mtx, (0, 1), "A", "_"),
+            Alignment::from("A".to_string(), "_".to_string(), -1.0)
         );
     }
 
     #[test]
     fn test_match() {
         assert_eq!(
-            ALIGNER.align("AGCT", "AGCT").score,
-            4.0
+            ALIGNER.align("AGCT", "AGCT"),
+            Alignment::from("AGCT".to_string(), "AGCT".to_string(), 4.0)
         )
     }
 
     #[test]
     fn test_mismatch() {
         assert_eq!(
-            ALIGNER.align("AGAT", "AGCT").score,
-            2.0
+            ALIGNER.align("AGAT", "AGCT"),
+            Alignment::from("AGAT".to_string(), "AGCT".to_string(), 2.0)
         )
     }
 }

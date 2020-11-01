@@ -1,7 +1,7 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner, Idx};
-use crate::alignment::Alignment;
-use crate::matrix::{Matrix, Element, Columnar, max_score, FScore};
+use crate::alignment::{Alignment, GAP};
+use crate::matrix::{Matrix, Columnar, max_score, FScore};
 use crate::matrix;
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 
@@ -93,27 +93,19 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
-        let mut ss = subject.chars().rev();
-        let mut rs = reference.chars().rev();
-        let mut aligned_subject = String::new();
-        let mut aligned_reference = String::new();
+        let mut aligned_subject = String::from(subject);
+        let mut aligned_reference = String::from(reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let (row, column) = cursor;
-            cursor = match mtx[(row, column)] {
-                Substitution(score) => {
-                    aligned_subject.insert(0, ss.next().expect("ref fail"));
-                    aligned_reference.insert(0, rs.next().expect("subj fail"));
-                    (row - 1, column - 1)
-                }
+            cursor = match mtx[cursor] {
+                Substitution(score) => (row - 1, column - 1),
                 Insertion(score) => {
-                    aligned_subject.insert(0, ss.next().unwrap());
-                    aligned_reference.insert(0, '_');
+                    aligned_reference.insert(column, GAP);
                     (row - 1, column)
                 }
                 Deletion(score) => {
-                    aligned_subject.insert(0, '_');
-                    aligned_reference.insert(0, rs.next().unwrap());
+                    aligned_subject.insert(row, GAP);
                     (row, column - 1)
                 }
                 _ => unreachable!()
@@ -331,6 +323,22 @@ mod tests {
         assert_eq!(
             ALIGNER.align("AC", "AGCT"),
             Alignment::from("A_C_".to_string(), "AGCT".to_string(), 0.0)
+        )
+    }
+
+    #[test]
+    fn test_empty_subject() {
+        assert_eq!(
+            ALIGNER.align("", "AGCT"),
+            Alignment::from("____".to_string(), "AGCT".to_string(), -4.0)
+        )
+    }
+
+    #[test]
+    fn test_empty_reference() {
+        assert_eq!(
+            ALIGNER.align("AGCT", ""),
+            Alignment::from("AGCT".to_string(), "____".to_string(), -4.0)
         )
     }
 }

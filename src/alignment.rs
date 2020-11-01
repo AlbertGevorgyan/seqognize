@@ -1,3 +1,5 @@
+pub const GAP: char = '_';
+
 #[derive(Debug, PartialEq)]
 pub struct Alignment {
     subject: String,

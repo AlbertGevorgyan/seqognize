@@ -16,9 +16,9 @@ pub enum Element {
 impl Element {
     pub fn score(&self) -> FScore {
         return match self {
-            Initial => NAN,
             Start => 0.0,
-            Insertion(score) | Deletion(score) | Substitution(score) => *score
+            Insertion(score) | Deletion(score) | Substitution(score) => *score,
+            Initial => unreachable!()
         };
     }
 }

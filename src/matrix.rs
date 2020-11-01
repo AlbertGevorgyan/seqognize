@@ -1,6 +1,5 @@
 use ndarray::{Array2, FixedInitializer, arr2};
 use crate::matrix::Element::{Start, Insertion, Deletion, Substitution, Initial};
-use std::f64::NAN;
 
 pub type FScore = f64;
 
@@ -62,15 +61,10 @@ mod tests {
     use super::{Columnar};
     use crate::matrix;
     use crate::matrix::Element::{Initial, Start, Substitution};
+    use crate::matrix::{Element, FScore};
 
     #[test]
     fn test_scores() {
-        let initial = Initial;
-        assert_ne!(
-            initial.score(),
-            initial.score()
-        );
-
         let start = Start;
         assert_eq!(
             start.score(),

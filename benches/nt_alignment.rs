@@ -14,7 +14,7 @@ fn nt_alignment_benchmark(c: &mut Criterion) {
             reference_gap_penalty: -1.0,
         }
     };
-    c.bench_function("NT alignment", |b| b.iter(|| aligner.align("ACGT", "ACT")));
+    c.bench_function("NT alignment", |b| b.iter(|| aligner.align("ACGTACT", "ACTACGT")));
 }
 
 criterion_group!(nt_alignment, nt_alignment_benchmark);

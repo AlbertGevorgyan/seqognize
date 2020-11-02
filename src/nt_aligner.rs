@@ -4,6 +4,7 @@ use crate::alignment::{Alignment, GAP};
 use crate::matrix::{Matrix, Columnar, max_score, FScore};
 use crate::matrix;
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
+use std::collections::VecDeque;
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -68,13 +69,13 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
-        let mut ss = subject.chars();
+        let mut ss = subject.bytes();
         for row in 1..mtx.num_rows() {
             let s = ss.next().unwrap();
-            let mut rs = reference.chars();
+            let mut rs = reference.bytes();
             for col in 1..mtx.num_columns() {
                 let r = rs.next().unwrap();
-                let substitution_score = self.config.get_substitution_score((row, col), s, r);
+                let substitution_score = self.config.get_substitution_score((row, col), s as char, r as char);
                 let insertion_penalty = self.config.get_reference_gap_opening_penalty(row);
                 let deletion_penalty = self.config.get_subject_gap_opening_penalty(col);
                 mtx[(row, col)] = *max_score(
@@ -93,25 +94,38 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
-        let mut aligned_subject = String::from(subject);
-        let mut aligned_reference = String::from(reference);
+        let mut ss = subject.bytes().rev();
+        let mut rs = reference.bytes().rev();
+        let capacity = subject.len() + reference.len();
+        let mut aligned_subject = VecDeque::with_capacity(capacity);
+        let mut aligned_reference = VecDeque::with_capacity(capacity);
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let (row, column) = cursor;
             cursor = match mtx[cursor] {
-                Substitution(_) => (row - 1, column - 1),
+                Substitution(_) => {
+                    aligned_subject.push_front(ss.next().unwrap());
+                    aligned_reference.push_front(rs.next().unwrap());
+                    (row - 1, column - 1)
+                }
                 Insertion(_) => {
-                    aligned_reference.insert(column, GAP);
+                    aligned_subject.push_front(ss.next().unwrap());
+                    aligned_reference.push_front(GAP as u8);
                     (row - 1, column)
                 }
                 Deletion(_) => {
-                    aligned_subject.insert(row, GAP);
+                    aligned_subject.push_front(GAP as u8);
+                    aligned_reference.push_front(rs.next().unwrap());
                     (row, column - 1)
                 }
                 _ => unreachable!()
             };
         }
-        Alignment::from(aligned_subject, aligned_reference, mtx[end_index].score())
+        Alignment::from(
+            String::from_utf8(Vec::from(aligned_subject)).unwrap(),
+            String::from_utf8(Vec::from(aligned_reference)).unwrap(),
+            mtx[end_index].score(),
+        )
     }
 }
 

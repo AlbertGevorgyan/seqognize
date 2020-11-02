@@ -60,8 +60,7 @@ pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Matri
 mod tests {
     use super::{Columnar};
     use crate::matrix;
-    use crate::matrix::Element::{Initial, Start, Substitution};
-    use crate::matrix::{Element, FScore};
+    use crate::matrix::Element::{Start, Substitution};
 
     #[test]
     fn test_scores() {

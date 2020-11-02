@@ -5,11 +5,11 @@ use crate::matrix::{Matrix, Columnar, max_score, FScore};
 use crate::matrix;
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 
-struct NtAlignmentConfig {
-    match_score: FScore,
-    mismatch_penalty: FScore,
-    subject_gap_penalty: FScore,
-    reference_gap_penalty: FScore,
+pub struct NtAlignmentConfig {
+    pub match_score: FScore,
+    pub mismatch_penalty: FScore,
+    pub subject_gap_penalty: FScore,
+    pub reference_gap_penalty: FScore,
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
@@ -24,8 +24,8 @@ impl AlignmentConfig for NtAlignmentConfig {
     }
 }
 
-struct GlobalNtAligner {
-    config: NtAlignmentConfig
+pub struct GlobalNtAligner {
+    pub config: NtAlignmentConfig
 }
 
 impl From<NtAlignmentConfig> for GlobalNtAligner {
@@ -99,12 +99,12 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         while cursor != (0, 0) {
             let (row, column) = cursor;
             cursor = match mtx[cursor] {
-                Substitution(score) => (row - 1, column - 1),
-                Insertion(score) => {
+                Substitution(_) => (row - 1, column - 1),
+                Insertion(_) => {
                     aligned_reference.insert(column, GAP);
                     (row - 1, column)
                 }
-                Deletion(score) => {
+                Deletion(_) => {
                     aligned_subject.insert(row, GAP);
                     (row, column - 1)
                 }
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_trace_back_snp() {
-        let mut mtx = matrix::from_elements(
+        let mtx = matrix::from_elements(
             &[
                 [Start, Deletion(-1.0)],
                 [Insertion(-1.0), Substitution(1.0)]
@@ -205,7 +205,7 @@ mod tests {
 
     #[test]
     fn test_trace_back_insertion() {
-        let mut mtx = matrix::from_elements(
+        let mtx = matrix::from_elements(
             &[
                 [Start],
                 [Insertion(-1.0)]
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn test_trace_back_deletion() {
-        let mut mtx = matrix::from_elements(
+        let mtx = matrix::from_elements(
             &[
                 [Start, Deletion(-1.0)]
             ]

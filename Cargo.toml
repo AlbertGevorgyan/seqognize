@@ -10,3 +10,10 @@ edition = "2018"
 array2d = "0.2.1"
 delegate = "0.4.3"
 ndarray = "0.10.2"
+
+[dev-dependencies]
+criterion = "0.3.3"
+
+[[bench]]
+name = "nt_alignment"
+harness = false

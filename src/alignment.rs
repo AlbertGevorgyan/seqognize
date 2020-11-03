@@ -23,15 +23,16 @@ pub struct AlignmentBuilder<'a> {
     pub reference_builder: AlignedSequenceBuilder<'a>,
 }
 
-pub fn builder<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
-    let capacity = subject.len() + reference.len();
-    AlignmentBuilder {
-        subject_builder: aligned_seq_builder(subject, capacity),
-        reference_builder: aligned_seq_builder(reference, capacity),
-    }
-}
-
 impl AlignmentBuilder<'_> {
+
+    pub fn from<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
+        let capacity = subject.len() + reference.len();
+        AlignmentBuilder {
+            subject_builder: AlignedSequenceBuilder::from(subject, capacity),
+            reference_builder: AlignedSequenceBuilder::from(reference, capacity),
+        }
+    }
+
     pub fn build(self, score: FScore) -> Alignment {
         Alignment::from(
             self.subject_builder.build(),
@@ -56,19 +57,20 @@ impl AlignmentBuilder<'_> {
     }
 }
 
-fn aligned_seq_builder(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {
-    AlignedSequenceBuilder {
-        source: sequence.bytes().rev(),
-        aligned: VecDeque::with_capacity(capacity),
-    }
-}
-
 pub struct AlignedSequenceBuilder<'a> {
     source: Rev<Bytes<'a>>,
     aligned: VecDeque<u8>,
 }
 
 impl AlignedSequenceBuilder<'_> {
+
+    pub fn from(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {
+        AlignedSequenceBuilder {
+            source: sequence.bytes().rev(),
+            aligned: VecDeque::with_capacity(capacity),
+        }
+    }
+
     pub fn take(&mut self) {
         self.aligned.push_front(self.source.next().unwrap());
     }

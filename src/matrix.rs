@@ -22,14 +22,6 @@ impl Element {
     }
 }
 
-pub fn max_score<'a>(elements: &'a [&Element]) -> &'a Element {
-    elements.iter()
-        .fold(
-            elements[0],
-            |el1, el2| if el1.score() > el2.score() { el1 } else { el2 },
-        )
-}
-
 pub trait Columnar {
     fn num_rows(&self) -> usize;
     fn num_columns(&self) -> usize;

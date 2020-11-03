@@ -1,9 +1,10 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner, Idx};
-use crate::alignment::{Alignment};
-use crate::matrix::{Matrix, Columnar, max_score, FScore};
-use crate::{matrix, alignment};
+use crate::alignment::{Alignment, AlignmentBuilder};
+use crate::matrix::{Matrix, Columnar, FScore, Element};
+use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
+use std::str::Bytes;
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -68,22 +69,20 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
-        let mut ss = subject.bytes();
+        let mut subject_iterator = SeqIterator::from(subject);
         for row in 1..mtx.num_rows() {
-            let s = ss.next().unwrap();
-            let mut rs = reference.bytes();
+            let s = subject_iterator.next_char();
+            let mut reference_iterator = SeqIterator::from(reference);
             for col in 1..mtx.num_columns() {
-                let r = rs.next().unwrap();
-                let substitution_score = self.config.get_substitution_score((row, col), s as char, r as char);
-                let insertion_penalty = self.config.get_reference_gap_opening_penalty(row);
-                let deletion_penalty = self.config.get_subject_gap_opening_penalty(col);
-                mtx[(row, col)] = *max_score(
-                    &[
-                        &Substitution(mtx[(row - 1, col - 1)].score() + substitution_score),
-                        &Insertion(mtx[(row - 1, col)].score() + insertion_penalty),
-                        &Deletion(mtx[(row, col - 1)].score() + deletion_penalty)
-                    ]
-                );
+                let r = reference_iterator.next_char();
+                mtx[(row, col)] = select(
+                    mtx[(row - 1, col - 1)].score()
+                        + self.config.get_substitution_score((row, col), s, r),
+                    mtx[(row - 1, col)].score() +
+                        self.config.get_reference_gap_opening_penalty(row),
+                    mtx[(row, col - 1)].score() +
+                        self.config.get_subject_gap_opening_penalty(col),
+                )
             }
         }
     }
@@ -93,7 +92,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
-        let mut builder = alignment::builder(subject, reference);
+        let mut builder = AlignmentBuilder::from(subject, reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let (row, column) = cursor;
@@ -117,6 +116,29 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 }
 
+struct SeqIterator<'a> {
+    bytes: Bytes<'a>
+}
+
+impl SeqIterator<'_> {
+    fn from(seq: &str) -> SeqIterator {
+        SeqIterator { bytes: seq.bytes() }
+    }
+
+    fn next_char(&mut self) -> char {
+        self.bytes.next().unwrap() as char
+    }
+}
+
+fn select(substitution_score: f64, insertion_score: f64, deletion_score: f64) -> Element {
+    if substitution_score >= insertion_score && substitution_score >= deletion_score {
+        Substitution(substitution_score)
+    } else if insertion_score >= deletion_score {
+        Insertion(insertion_score)
+    } else {
+        Deletion(deletion_score)
+    }
+}
 
 #[cfg(test)]
 mod tests {

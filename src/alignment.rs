@@ -39,6 +39,21 @@ impl AlignmentBuilder<'_> {
             score,
         )
     }
+
+    pub fn take_both(&mut self) {
+        self.subject_builder.take();
+        self.reference_builder.take();
+    }
+
+    pub fn gap_subject(&mut self) {
+        self.subject_builder.gap();
+        self.reference_builder.take();
+    }
+
+    pub fn gap_reference(&mut self) {
+        self.subject_builder.take();
+        self.reference_builder.gap();
+    }
 }
 
 fn aligned_seq_builder(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {

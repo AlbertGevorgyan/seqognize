@@ -99,18 +99,15 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             let (row, column) = cursor;
             cursor = match mtx[cursor] {
                 Substitution(_) => {
-                    builder.subject_builder.take();
-                    builder.reference_builder.take();
+                    builder.take_both();
                     (row - 1, column - 1)
                 }
                 Insertion(_) => {
-                    builder.subject_builder.take();
-                    builder.reference_builder.gap();
+                    builder.gap_reference();
                     (row - 1, column)
                 }
                 Deletion(_) => {
-                    builder.subject_builder.gap();
-                    builder.reference_builder.take();
+                    builder.gap_subject();
                     (row, column - 1)
                 }
                 _ => unreachable!()

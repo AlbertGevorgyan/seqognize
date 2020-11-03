@@ -4,7 +4,7 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Columnar, FScore, Element};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
-use std::str::Bytes;
+use crate::seq_iterator::SeqIterator;
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -113,20 +113,6 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             };
         }
         builder.build(mtx[end_index].score())
-    }
-}
-
-struct SeqIterator<'a> {
-    bytes: Bytes<'a>
-}
-
-impl SeqIterator<'_> {
-    fn from(seq: &str) -> SeqIterator {
-        SeqIterator { bytes: seq.bytes() }
-    }
-
-    fn next_char(&mut self) -> char {
-        self.bytes.next().unwrap() as char
     }
 }
 

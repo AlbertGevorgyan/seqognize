@@ -22,7 +22,10 @@ impl Element {
     }
 }
 
+pub type Idx = (usize, usize);
+
 pub trait Columnar {
+    fn of(num_rows: usize, num_columns: usize)-> Self;
     fn num_rows(&self) -> usize;
     fn num_columns(&self) -> usize;
 }
@@ -30,6 +33,10 @@ pub trait Columnar {
 pub type Matrix = Array2<Element>;
 
 impl Columnar for Matrix {
+    fn of(num_rows: usize, num_columns: usize) -> Self {
+        Matrix::from_elem((num_rows, num_columns), Initial)
+    }
+
     fn num_rows(&self) -> usize {
         self.dim().0
     }
@@ -39,8 +46,14 @@ impl Columnar for Matrix {
     }
 }
 
-pub fn of(num_rows: usize, num_columns: usize) -> Matrix {
-    Matrix::from_elem((num_rows, num_columns), Initial)
+pub fn move_back(element: &Element, position: Idx) -> Idx {
+    let (row, column) = position;
+    match element {
+        Substitution(_) => (row - 1, column - 1),
+        Insertion(_) => (row - 1, column),
+        Deletion(_) => (row, column - 1),
+        _ => unreachable!()
+    }
 }
 
 pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Matrix
@@ -50,8 +63,7 @@ pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Matri
 
 #[cfg(test)]
 mod tests {
-    use super::{Columnar};
-    use crate::matrix;
+    use crate::matrix::{Columnar, Matrix};
     use crate::matrix::Element::{Start, Substitution};
 
     #[test]
@@ -71,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_dimensions() {
-        let mtx = matrix::of(3, 2);
+        let mtx = Matrix::of(3, 2);
         assert_eq!(
             mtx.num_rows(),
             3

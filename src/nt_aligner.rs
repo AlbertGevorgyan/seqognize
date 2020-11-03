@@ -1,7 +1,7 @@
 use crate::config::AlignmentConfig;
-use crate::aligner::{Aligner, Idx};
+use crate::aligner::{Aligner};
 use crate::alignment::{Alignment, AlignmentBuilder};
-use crate::matrix::{Matrix, Columnar, FScore, Element};
+use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::seq_iterator::SeqIterator;
@@ -37,7 +37,7 @@ impl From<NtAlignmentConfig> for GlobalNtAligner {
 
 impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn create_mtx(&self, subject: &str, reference: &str) -> Matrix {
-        matrix::of(subject.len() + 1, reference.len() + 1)
+        Matrix::of(subject.len() + 1, reference.len() + 1)
     }
 
     fn fill_start(&self, mtx: &mut Matrix) {
@@ -95,28 +95,16 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         let mut builder = AlignmentBuilder::from(subject, reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
-            let (row, column) = cursor;
-            cursor = match mtx[cursor] {
-                Substitution(_) => {
-                    builder.take_both();
-                    (row - 1, column - 1)
-                }
-                Insertion(_) => {
-                    builder.gap_reference();
-                    (row - 1, column)
-                }
-                Deletion(_) => {
-                    builder.gap_subject();
-                    (row, column - 1)
-                }
-                _ => unreachable!()
-            };
+            let element = mtx[cursor];
+            builder.handle(&element);
+            cursor = matrix::move_back(&element, cursor);
         }
         builder.build(mtx[end_index].score())
     }
 }
 
-fn select(substitution_score: f64, insertion_score: f64, deletion_score: f64) -> Element {
+
+fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> Element {
     if substitution_score >= insertion_score && substitution_score >= deletion_score {
         Substitution(substitution_score)
     } else if insertion_score >= deletion_score {
@@ -132,7 +120,7 @@ mod tests {
     use crate::aligner::Aligner;
     use crate::matrix::Element::{Substitution, Deletion, Insertion, Initial, Start};
     use crate::matrix;
-    use crate::matrix::{FScore};
+    use crate::matrix::{Columnar, Matrix, FScore};
     use crate::alignment::Alignment;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
@@ -148,13 +136,13 @@ mod tests {
     fn test_create_mtx() {
         assert_eq!(
             ALIGNER.create_mtx("ss", "rrr"),
-            matrix::of(3, 4)
+            Matrix::of(3, 4)
         )
     }
 
     #[test]
     fn test_fill_top_row() {
-        let mut mtx = matrix::of(2, 3);
+        let mut mtx = Matrix::of(2, 3);
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
@@ -170,7 +158,7 @@ mod tests {
 
     #[test]
     fn test_fill_left_column() {
-        let mut mtx = matrix::of(3, 2);
+        let mut mtx = Matrix::of(3, 2);
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),

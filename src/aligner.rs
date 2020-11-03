@@ -1,8 +1,6 @@
 use crate::alignment::Alignment;
 use crate::config::{AlignmentConfig};
-use crate::matrix::{Matrix};
-
-pub type Idx = (usize, usize);
+use crate::matrix::{Matrix, Idx};
 
 pub trait Aligner<C>: From<C>
     where C: AlignmentConfig {

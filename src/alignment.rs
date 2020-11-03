@@ -1,7 +1,8 @@
 use std::collections::VecDeque;
-use crate::matrix::FScore;
+use crate::matrix::{FScore, Element};
 use std::iter::Rev;
 use std::str::Bytes;
+use crate::matrix::Element::{Substitution, Insertion, Deletion};
 
 pub const GAP: char = '_';
 
@@ -41,17 +42,26 @@ impl AlignmentBuilder<'_> {
         )
     }
 
-    pub fn take_both(&mut self) {
+    pub fn handle(&mut self, element: &Element) {
+        match element {
+            Substitution(_) => self.take_both(),
+            Insertion(_) => self.gap_reference(),
+            Deletion(_) => self.gap_subject(),
+            _ => unreachable!()
+        };
+    }
+
+    fn take_both(&mut self) {
         self.subject_builder.take();
         self.reference_builder.take();
     }
 
-    pub fn gap_subject(&mut self) {
+    fn gap_subject(&mut self) {
         self.subject_builder.gap();
         self.reference_builder.take();
     }
 
-    pub fn gap_reference(&mut self) {
+    fn gap_reference(&mut self) {
         self.subject_builder.take();
         self.reference_builder.gap();
     }

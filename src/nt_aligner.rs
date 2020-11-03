@@ -2,9 +2,8 @@ use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner, Idx};
 use crate::alignment::{Alignment, GAP};
 use crate::matrix::{Matrix, Columnar, max_score, FScore};
-use crate::matrix;
+use crate::{matrix, alignment};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
-use std::collections::VecDeque;
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -96,36 +95,30 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
         let mut ss = subject.bytes().rev();
         let mut rs = reference.bytes().rev();
-        let capacity = subject.len() + reference.len();
-        let mut aligned_subject = VecDeque::with_capacity(capacity);
-        let mut aligned_reference = VecDeque::with_capacity(capacity);
+        let mut builder = alignment::builder(subject.len() + reference.len());
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let (row, column) = cursor;
             cursor = match mtx[cursor] {
                 Substitution(_) => {
-                    aligned_subject.push_front(ss.next().unwrap());
-                    aligned_reference.push_front(rs.next().unwrap());
+                    builder.prepend_to_subject(ss.next().unwrap());
+                    builder.prepend_to_reference(rs.next().unwrap());
                     (row - 1, column - 1)
                 }
                 Insertion(_) => {
-                    aligned_subject.push_front(ss.next().unwrap());
-                    aligned_reference.push_front(GAP as u8);
+                    builder.prepend_to_subject(ss.next().unwrap());
+                    builder.prepend_to_reference(GAP as u8);
                     (row - 1, column)
                 }
                 Deletion(_) => {
-                    aligned_subject.push_front(GAP as u8);
-                    aligned_reference.push_front(rs.next().unwrap());
+                    builder.prepend_to_subject(GAP as u8);
+                    builder.prepend_to_reference(rs.next().unwrap());
                     (row, column - 1)
                 }
                 _ => unreachable!()
             };
         }
-        Alignment::from(
-            String::from_utf8(Vec::from(aligned_subject)).unwrap(),
-            String::from_utf8(Vec::from(aligned_reference)).unwrap(),
-            mtx[end_index].score(),
-        )
+        builder.build(mtx[end_index].score())
     }
 }
 

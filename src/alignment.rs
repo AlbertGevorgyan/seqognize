@@ -1,5 +1,7 @@
 use std::collections::VecDeque;
 use crate::matrix::FScore;
+use std::iter::Rev;
+use std::str::Bytes;
 
 pub const GAP: char = '_';
 
@@ -16,32 +18,51 @@ impl Alignment {
     }
 }
 
-pub struct AlignmentBuilder {
-    aligned_subject: VecDeque<u8>,
-    aligned_reference: VecDeque<u8>,
+pub struct AlignmentBuilder<'a> {
+    pub subject_builder: AlignedSequenceBuilder<'a>,
+    pub reference_builder: AlignedSequenceBuilder<'a>,
 }
 
-pub fn builder(capacity: usize) -> AlignmentBuilder {
+pub fn builder<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
+    let capacity = subject.len() + reference.len();
     AlignmentBuilder {
-        aligned_subject: VecDeque::with_capacity(capacity),
-        aligned_reference: VecDeque::with_capacity(capacity),
+        subject_builder: aligned_seq_builder(subject, capacity),
+        reference_builder: aligned_seq_builder(reference, capacity),
     }
 }
 
-impl AlignmentBuilder {
-    pub fn prepend_to_subject(&mut self, symbol: u8) {
-        self.aligned_subject.push_front(symbol)
-    }
-
-    pub fn prepend_to_reference(&mut self, symbol: u8) {
-        self.aligned_reference.push_front(symbol)
-    }
-
+impl AlignmentBuilder<'_> {
     pub fn build(self, score: FScore) -> Alignment {
         Alignment::from(
-            String::from_utf8(Vec::from(self.aligned_subject)).unwrap(),
-            String::from_utf8(Vec::from(self.aligned_reference)).unwrap(),
+            self.subject_builder.build(),
+            self.reference_builder.build(),
             score,
         )
+    }
+}
+
+fn aligned_seq_builder(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {
+    AlignedSequenceBuilder {
+        source: sequence.bytes().rev(),
+        aligned: VecDeque::with_capacity(capacity),
+    }
+}
+
+pub struct AlignedSequenceBuilder<'a> {
+    source: Rev<Bytes<'a>>,
+    aligned: VecDeque<u8>,
+}
+
+impl AlignedSequenceBuilder<'_> {
+    pub fn take(&mut self) {
+        self.aligned.push_front(self.source.next().unwrap());
+    }
+
+    pub fn gap(&mut self) {
+        self.aligned.push_front(GAP as u8);
+    }
+
+    pub fn build(self) -> String {
+        String::from_utf8(Vec::from(self.aligned)).unwrap()
     }
 }

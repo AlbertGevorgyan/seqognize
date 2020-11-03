@@ -1,6 +1,6 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner, Idx};
-use crate::alignment::{Alignment, GAP};
+use crate::alignment::{Alignment};
 use crate::matrix::{Matrix, Columnar, max_score, FScore};
 use crate::{matrix, alignment};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
@@ -93,26 +93,24 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
-        let mut ss = subject.bytes().rev();
-        let mut rs = reference.bytes().rev();
-        let mut builder = alignment::builder(subject.len() + reference.len());
+        let mut builder = alignment::builder(subject, reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let (row, column) = cursor;
             cursor = match mtx[cursor] {
                 Substitution(_) => {
-                    builder.prepend_to_subject(ss.next().unwrap());
-                    builder.prepend_to_reference(rs.next().unwrap());
+                    builder.subject_builder.take();
+                    builder.reference_builder.take();
                     (row - 1, column - 1)
                 }
                 Insertion(_) => {
-                    builder.prepend_to_subject(ss.next().unwrap());
-                    builder.prepend_to_reference(GAP as u8);
+                    builder.subject_builder.take();
+                    builder.reference_builder.gap();
                     (row - 1, column)
                 }
                 Deletion(_) => {
-                    builder.prepend_to_subject(GAP as u8);
-                    builder.prepend_to_reference(rs.next().unwrap());
+                    builder.subject_builder.gap();
+                    builder.reference_builder.take();
                     (row, column - 1)
                 }
                 _ => unreachable!()

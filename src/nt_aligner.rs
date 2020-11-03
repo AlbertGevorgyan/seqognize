@@ -5,6 +5,7 @@ use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::seq_iterator::SeqIterator;
+use std::iter::successors;
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -45,27 +46,29 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
-        let mut gaps = 0.0;
+        let mut columns = 0..mtx.num_columns();
+        let gap_sum_iterator = successors(Some(0.0), |acc|
+            columns.next()
+                .map(|n| self.config.get_subject_gap_opening_penalty(n) + *acc)
+        ).skip(1);
         mtx.row_mut(0)
             .iter_mut()
             .skip(1)
-            .enumerate()
-            .for_each(|(i, el)| {
-                gaps += self.config.get_subject_gap_opening_penalty(i);
-                *el = Deletion(gaps);
-            });
+            .zip(gap_sum_iterator)
+            .for_each(|(el, gaps)| *el = Deletion(gaps));
     }
 
     fn fill_left_column(&self, mtx: &mut Matrix) {
-        let mut gaps = 0.0;
+        let mut rows = 0..mtx.num_rows();
+        let gap_sum_iterator = successors(Some(0.0), |acc|
+            rows.next()
+                .map(|n| self.config.get_reference_gap_opening_penalty(n) + *acc)
+        ).skip(1);
         mtx.column_mut(0)
             .iter_mut()
             .skip(1)
-            .enumerate()
-            .for_each(|(i, el)| {
-                gaps += self.config.get_reference_gap_opening_penalty(i);
-                *el = Insertion(gaps);
-            });
+            .zip(gap_sum_iterator)
+            .for_each(|(el, gaps)| *el = Insertion(gaps));
     }
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {

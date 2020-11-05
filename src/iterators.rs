@@ -1,5 +1,6 @@
 use std::str::Bytes;
 use std::iter::{Successors, successors};
+use crate::matrix::FScore;
 
 pub struct SeqIterator<'a> {
     bytes: Bytes<'a>
@@ -15,8 +16,8 @@ impl SeqIterator<'_> {
     }
 }
 
-pub fn accumulate<S>(size: usize, supplier: S) -> Successors<f64, impl FnMut(&f64) -> Option<f64>>
-    where S: Fn(usize) -> f64 {
+pub fn accumulate<S>(size: usize, supplier: S) -> Successors<FScore, impl FnMut(&FScore) -> Option<FScore>>
+    where S: Fn(usize) -> FScore {
     let mut range = 0..size;
     successors(
         Some(0.0),

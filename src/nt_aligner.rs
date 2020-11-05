@@ -5,6 +5,8 @@ use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::iterators::{SeqIterator, accumulate};
+use ndarray::{ArrayBase, ViewRepr, Dim};
+use std::iter::{Skip, Successors};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -45,27 +47,27 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
-        let gap_sum_iterator = accumulate(
+        let accumulator = accumulate(
             mtx.num_columns(),
             |n| self.config.get_subject_gap_opening_penalty(n),
-        ).skip(1);
-        mtx.row_mut(0)
-            .iter_mut()
-            .skip(1)
-            .zip(gap_sum_iterator)
-            .for_each(|(el, gaps)| *el = Deletion(gaps));
+        );
+        fill_gaps(
+            &mut mtx.row_mut(0),
+            accumulator,
+            |s| Deletion(s),
+        )
     }
 
     fn fill_left_column(&self, mtx: &mut Matrix) {
-        let gap_sum_iterator = accumulate(
+        let accumulator = accumulate(
             mtx.num_rows(),
             |n| self.config.get_reference_gap_opening_penalty(n),
-        ).skip(1);
-        mtx.column_mut(0)
-            .iter_mut()
-            .skip(1)
-            .zip(gap_sum_iterator)
-            .for_each(|(el, gaps)| *el = Insertion(gaps));
+        );
+        fill_gaps(
+            &mut mtx.column_mut(0),
+            accumulator,
+            |s| Insertion(s),
+        );
     }
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
@@ -101,6 +103,17 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         }
         builder.build(mtx[end_index].score())
     }
+}
+
+fn fill_gaps(
+    dimension: &mut ArrayBase<ViewRepr<&mut Element>, Dim<[usize; 1]>>,
+    accumulator: Successors<FScore, impl FnMut(&FScore) -> Option<FScore>>,
+    element: fn(FScore) -> Element,
+) {
+    dimension.iter_mut()
+        .skip(1)
+        .zip(accumulator.skip(1))
+        .for_each(|(el, gaps)| *el = element(gaps));
 }
 
 fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> Element {

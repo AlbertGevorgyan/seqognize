@@ -4,13 +4,13 @@ use crate::matrix::{Matrix, Idx};
 
 pub trait Aligner<C>: From<C>
     where C: AlignmentConfig {
-    fn align<'a>(&self, subject: &str, reference: &str) -> Alignment {
+    fn align(&self, subject: &str, reference: &str) -> Alignment {
         let mut mtx: Matrix = self.create_mtx(subject, reference);
         self.fill_start(&mut mtx);
         self.fill_top_row(&mut mtx);
         self.fill_left_column(&mut mtx);
         self.fill(&mut mtx, &subject, &reference);
-        let end_idx: (usize, usize) = self.end_idx(&mtx);
+        let end_idx: Idx = self.end_idx(&mtx);
         self.trace_back(&mtx, end_idx, &subject, &reference)
     }
 

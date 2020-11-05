@@ -14,7 +14,7 @@ pub struct NtAlignmentConfig {
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
-    fn get_substitution_score(&self, pos: (usize, usize), s: char, r: char) -> FScore {
+    fn get_substitution_score(&self, pos: (usize, usize), s: u8, r: u8) -> FScore {
         if s == r { self.match_score } else { self.mismatch_penalty }
     }
     fn get_subject_gap_opening_penalty(&self, pos: usize) -> FScore {
@@ -71,10 +71,10 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
         let mut subject_iterator = SeqIterator::from(subject);
         for row in 1..mtx.num_rows() {
-            let s = subject_iterator.next_char();
+            let s = subject_iterator.next_byte();
             let mut reference_iterator = SeqIterator::from(reference);
             for col in 1..mtx.num_columns() {
-                let r = reference_iterator.next_char();
+                let r = reference_iterator.next_byte();
                 mtx[(row, col)] = select(
                     mtx[(row - 1, col - 1)].score() +
                         self.config.get_substitution_score((row, col), s, r),

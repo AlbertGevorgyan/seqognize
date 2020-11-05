@@ -11,8 +11,8 @@ impl SeqIterator<'_> {
         SeqIterator { bytes: seq.bytes() }
     }
 
-    pub fn next_char(&mut self) -> char {
-        self.bytes.next().unwrap() as char
+    pub fn next_byte(&mut self) -> u8 {
+        self.bytes.next().unwrap()
     }
 }
 

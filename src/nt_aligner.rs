@@ -6,7 +6,7 @@ use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::iterators::{SeqIterator, accumulate};
 use ndarray::{ArrayBase, ViewRepr, Dim};
-use std::iter::{Skip, Successors};
+use std::iter::{Successors};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,

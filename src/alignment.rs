@@ -10,12 +10,16 @@ pub const GAP: char = '_';
 pub struct Alignment {
     subject: String,
     reference: String,
-    pub score: f64,
+    pub score: FScore,
 }
 
 impl Alignment {
-    pub fn from(subject: String, reference: String, score: f64) -> Self {
-        Alignment { reference, subject, score }
+    pub fn from(subject: &str, reference: &str, score: FScore) -> Self {
+        Alignment {
+            subject: subject.to_string(),
+            reference: reference.to_string(),
+            score,
+        }
     }
 }
 
@@ -25,7 +29,6 @@ pub struct AlignmentBuilder<'a> {
 }
 
 impl AlignmentBuilder<'_> {
-
     pub fn from<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
         let capacity = subject.len() + reference.len();
         AlignmentBuilder {
@@ -34,15 +37,7 @@ impl AlignmentBuilder<'_> {
         }
     }
 
-    pub fn build(self, score: FScore) -> Alignment {
-        Alignment::from(
-            self.subject_builder.build(),
-            self.reference_builder.build(),
-            score,
-        )
-    }
-
-    pub fn handle(&mut self, element: &Element) {
+    pub fn take(&mut self, element: &Element) {
         match element {
             Substitution(_) => self.take_both(),
             Insertion(_) => self.gap_reference(),
@@ -65,6 +60,14 @@ impl AlignmentBuilder<'_> {
         self.subject_builder.take();
         self.reference_builder.gap();
     }
+
+    pub fn build(self, score: FScore) -> Alignment {
+        Alignment {
+            subject: self.subject_builder.build(),
+            reference: self.reference_builder.build(),
+            score,
+        }
+    }
 }
 
 pub struct AlignedSequenceBuilder<'a> {
@@ -73,7 +76,6 @@ pub struct AlignedSequenceBuilder<'a> {
 }
 
 impl AlignedSequenceBuilder<'_> {
-
     pub fn from(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {
         AlignedSequenceBuilder {
             source: sequence.bytes().rev(),

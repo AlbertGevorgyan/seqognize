@@ -5,8 +5,7 @@ use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::iterators::{SeqIterator, accumulate};
-use ndarray::{ArrayBase, ViewRepr, Dim};
-use std::iter::{Successors};
+use ndarray::{ArrayBase, ViewRepr, Dimension};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -106,8 +105,8 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
 }
 
 fn fill_gaps(
-    dimension: &mut ArrayBase<ViewRepr<&mut Element>, Dim<[usize; 1]>>,
-    accumulator: Successors<FScore, impl FnMut(&FScore) -> Option<FScore>>,
+    dimension: &mut ArrayBase<ViewRepr<&mut Element>, impl Dimension>,
+    accumulator: impl Iterator<Item=FScore>,
     element: fn(FScore) -> Element,
 ) {
     dimension.iter_mut()

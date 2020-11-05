@@ -25,7 +25,7 @@ impl Element {
 pub type Idx = (usize, usize);
 
 pub trait Columnar {
-    fn of(num_rows: usize, num_columns: usize)-> Self;
+    fn of(num_rows: usize, num_columns: usize) -> Self;
     fn num_rows(&self) -> usize;
     fn num_columns(&self) -> usize;
 }
@@ -56,8 +56,8 @@ pub fn move_back(element: &Element, position: Idx) -> Idx {
     }
 }
 
-pub fn from_elements<V: FixedInitializer<Elem=Element>>(elements: &[V]) -> Matrix
-    where V: Clone {
+pub fn from_elements<V>(elements: &[V]) -> Matrix
+    where V: Clone + FixedInitializer<Elem=Element> {
     arr2(&elements)
 }
 

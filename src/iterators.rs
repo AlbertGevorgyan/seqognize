@@ -1,5 +1,5 @@
 use std::str::Bytes;
-use std::iter::{Successors, successors};
+use std::iter::{successors};
 use std::ops::Add;
 
 pub struct SeqIterator<'a> {
@@ -16,7 +16,7 @@ impl SeqIterator<'_> {
     }
 }
 
-pub fn accumulate<S, V>(size: usize, supplier: S) -> Successors<V, impl FnMut(&V) -> Option<V>>
+pub fn accumulate<S, V>(size: usize, supplier: S) -> impl Iterator<Item=V>
     where V: Add<V, Output=V> + Default + Copy,
           S: Fn(usize) -> V {
     let mut range = 0..size;

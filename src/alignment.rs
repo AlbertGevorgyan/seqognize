@@ -14,7 +14,7 @@ pub struct Alignment {
 }
 
 impl Alignment {
-    pub fn from(subject: &str, reference: &str, score: FScore) -> Self {
+    pub fn new(subject: &str, reference: &str, score: FScore) -> Self {
         Alignment {
             subject: subject.to_string(),
             reference: reference.to_string(),
@@ -29,7 +29,7 @@ pub struct AlignmentBuilder<'a> {
 }
 
 impl AlignmentBuilder<'_> {
-    pub fn from<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
+    pub fn new<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
         let capacity = subject.len() + reference.len();
         AlignmentBuilder {
             subject_builder: AlignedSequenceBuilder::from(subject, capacity),

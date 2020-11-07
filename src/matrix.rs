@@ -1,5 +1,7 @@
 use ndarray::{Array2, FixedInitializer, arr2};
 use crate::matrix::Element::{Start, Insertion, Deletion, Substitution, Initial};
+use std::process::Output;
+use std::ops::Add;
 
 pub type FScore = f64;
 
@@ -19,6 +21,14 @@ impl Element {
             Insertion(score) | Deletion(score) | Substitution(score) => *score,
             Initial => unreachable!()
         };
+    }
+}
+
+impl Add<FScore> for Element {
+    type Output = FScore;
+
+    fn add(self, rhs: FScore) -> Self::Output {
+        self.score() + rhs
     }
 }
 

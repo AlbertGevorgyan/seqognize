@@ -75,11 +75,11 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             for col in 1..mtx.num_columns() {
                 let r = reference_iterator.next_byte();
                 mtx[(row, col)] = select(
-                    mtx[(row - 1, col - 1)].score() +
+                    mtx[(row - 1, col - 1)] +
                         self.config.get_substitution_score((row, col), s, r),
-                    mtx[(row - 1, col)].score() +
+                    mtx[(row - 1, col)] +
                         self.config.get_reference_gap_opening_penalty(row),
-                    mtx[(row, col - 1)].score() +
+                    mtx[(row, col - 1)] +
                         self.config.get_subject_gap_opening_penalty(col),
                 )
             }

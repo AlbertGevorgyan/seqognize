@@ -46,25 +46,23 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
-        let accumulator = accumulate(
-            mtx.num_columns(),
-            |n| self.config.get_subject_gap_opening_penalty(n),
-        );
         fill_gaps(
+            accumulate(
+                mtx.num_columns(),
+                |n| self.config.get_subject_gap_opening_penalty(n),
+            ),
             &mut mtx.row_mut(0),
-            accumulator,
             |s| Deletion(s),
         )
     }
 
     fn fill_left_column(&self, mtx: &mut Matrix) {
-        let accumulator = accumulate(
-            mtx.num_rows(),
-            |n| self.config.get_reference_gap_opening_penalty(n),
-        );
         fill_gaps(
+            accumulate(
+                mtx.num_rows(),
+                |n| self.config.get_reference_gap_opening_penalty(n),
+            ),
             &mut mtx.column_mut(0),
-            accumulator,
             |s| Insertion(s),
         );
     }
@@ -105,8 +103,8 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
 }
 
 fn fill_gaps(
-    dimension: &mut ArrayBase<ViewRepr<&mut Element>, impl Dimension>,
     accumulator: impl Iterator<Item=FScore>,
+    dimension: &mut ArrayBase<ViewRepr<&mut Element>, impl Dimension>,
     element: fn(FScore) -> Element,
 ) {
     dimension.iter_mut()

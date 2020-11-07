@@ -1,6 +1,5 @@
 use ndarray::{Array2, FixedInitializer, arr2};
 use crate::matrix::Element::{Start, Insertion, Deletion, Substitution, Initial};
-use std::process::Output;
 use std::ops::Add;
 
 pub type FScore = f64;

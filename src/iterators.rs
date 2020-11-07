@@ -1,6 +1,8 @@
 use std::str::Bytes;
 use std::iter::{successors};
 use std::ops::Add;
+use ndarray::{Dimension};
+use ndarray::iter::IterMut;
 
 pub struct SeqIterator<'a> {
     bytes: Bytes<'a>
@@ -24,4 +26,14 @@ pub fn accumulate<S, V>(size: usize, supplier: S) -> impl Iterator<Item=V>
         Some(V::default()),
         move |acc| range.next().map(|n| *acc + supplier(n)),
     )
+}
+
+pub fn set_accumulated<V, E>(
+    accumulator: impl Iterator<Item=V>,
+    setter: IterMut<E, impl Dimension>,
+    mapper: fn(V) -> E,
+) {
+    setter.skip(1)
+        .zip(accumulator.skip(1))
+        .for_each(|(el, value)| *el = mapper(value));
 }

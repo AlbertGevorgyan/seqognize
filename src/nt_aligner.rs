@@ -4,8 +4,7 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
 use crate::{matrix};
 use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
-use crate::iterators::{SeqIterator, accumulate};
-use ndarray::{ArrayBase, ViewRepr, Dimension};
+use crate::iterators::{SeqIterator, accumulate, set_accumulated};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -46,23 +45,23 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
-        fill_gaps(
+        set_accumulated(
             accumulate(
                 mtx.num_columns(),
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
-            &mut mtx.row_mut(0),
+            mtx.row_mut(0).iter_mut(),
             |s| Deletion(s),
         )
     }
 
     fn fill_left_column(&self, mtx: &mut Matrix) {
-        fill_gaps(
+        set_accumulated(
             accumulate(
                 mtx.num_rows(),
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
-            &mut mtx.column_mut(0),
+            mtx.column_mut(0).iter_mut(),
             |s| Insertion(s),
         );
     }
@@ -100,17 +99,6 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         }
         builder.build(mtx[end_index].score())
     }
-}
-
-fn fill_gaps(
-    accumulator: impl Iterator<Item=FScore>,
-    dimension: &mut ArrayBase<ViewRepr<&mut Element>, impl Dimension>,
-    element: fn(FScore) -> Element,
-) {
-    dimension.iter_mut()
-        .skip(1)
-        .zip(accumulator.skip(1))
-        .for_each(|(el, gaps)| *el = element(gaps));
 }
 
 fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> Element {

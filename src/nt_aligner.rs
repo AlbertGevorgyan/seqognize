@@ -126,7 +126,7 @@ mod tests {
     use crate::matrix;
     use crate::matrix::{Columnar, Matrix};
     use crate::alignment::Alignment;
-    use crate::element::{INITIAL, FScore};
+    use crate::element::{FScore, Element};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -151,7 +151,7 @@ mod tests {
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            INITIAL
+            Element::default()
         );
         for i in 1..3 {
             assert_eq!(
@@ -167,7 +167,7 @@ mod tests {
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            INITIAL
+            Element::default()
         );
         for i in 1..3 {
             assert_eq!(
@@ -181,7 +181,7 @@ mod tests {
     fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
-                [INITIAL, deletion(-1.0)],
+                [Element::default(), deletion(-1.0)],
                 [insertion(-1.0), substitution(0.0)]
             ]
         );
@@ -196,7 +196,7 @@ mod tests {
     fn test_trace_back_snp() {
         let mtx = matrix::from_elements(
             &[
-                [INITIAL, deletion(-1.0)],
+                [Element::default(), deletion(-1.0)],
                 [insertion(-1.0), substitution(1.0)]
             ]
         );
@@ -210,7 +210,7 @@ mod tests {
     fn test_trace_back_insertion() {
         let mtx = matrix::from_elements(
             &[
-                [INITIAL],
+                [Element::default()],
                 [insertion(-1.0)]
             ]
         );
@@ -224,7 +224,7 @@ mod tests {
     fn test_trace_back_deletion() {
         let mtx = matrix::from_elements(
             &[
-                [INITIAL, deletion(-1.0)]
+                [Element::default(), deletion(-1.0)]
             ]
         );
         assert_eq!(

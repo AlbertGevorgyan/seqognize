@@ -24,4 +24,9 @@ impl Add<FScore> for Element {
     }
 }
 
-pub const INITIAL: Element = Element { pointer: Pointer::UNDEF, score: 0.0 };
+impl Default for Element {
+    fn default() -> Self {
+        Element { pointer: Pointer::UNDEF, score: 0.0 }
+    }
+}
+

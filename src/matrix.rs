@@ -1,5 +1,5 @@
 use ndarray::{Array2, FixedInitializer, arr2};
-use crate::element::{Pointer, Element, INITIAL};
+use crate::element::{Pointer, Element};
 
 pub type Idx = (usize, usize);
 
@@ -13,7 +13,7 @@ pub type Matrix = Array2<Element>;
 
 impl Columnar for Matrix {
     fn of(num_rows: usize, num_columns: usize) -> Self {
-        Matrix::from_elem((num_rows, num_columns), INITIAL)
+        Matrix::from_elem((num_rows, num_columns), Element::default())
     }
 
     fn num_rows(&self) -> usize {

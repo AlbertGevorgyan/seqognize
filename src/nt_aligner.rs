@@ -1,10 +1,10 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner};
 use crate::alignment::{Alignment, AlignmentBuilder};
-use crate::matrix::{Matrix, Columnar, FScore, Element, Idx};
+use crate::matrix::{Matrix, Columnar, Idx};
 use crate::{matrix};
-use crate::matrix::Element::{Deletion, Insertion, Substitution, Start};
 use crate::iterators::{SeqIterator, accumulate, set_accumulated};
+use crate::element::{FScore, Element, Pointer};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -40,10 +40,6 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         Matrix::of(subject.len() + 1, reference.len() + 1)
     }
 
-    fn fill_start(&self, mtx: &mut Matrix) {
-        mtx[(0, 0)] = Start;
-    }
-
     fn fill_top_row(&self, mtx: &mut Matrix) {
         set_accumulated(
             accumulate(
@@ -51,7 +47,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
             mtx.row_mut(0).iter_mut(),
-            |s| Deletion(s),
+            |s| deletion(s),
         )
     }
 
@@ -62,7 +58,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
             mtx.column_mut(0).iter_mut(),
-            |s| Insertion(s),
+            |s| insertion(s),
         );
     }
 
@@ -97,28 +93,40 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             builder.take(&element);
             cursor = matrix::move_back(&element, cursor);
         }
-        builder.build(mtx[end_index].score())
+        builder.build(mtx[end_index].score)
     }
 }
 
 fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> Element {
     if substitution_score >= insertion_score && substitution_score >= deletion_score {
-        Substitution(substitution_score)
+        substitution(substitution_score)
     } else if insertion_score >= deletion_score {
-        Insertion(insertion_score)
+        insertion(insertion_score)
     } else {
-        Deletion(deletion_score)
+        deletion(deletion_score)
     }
+}
+
+pub fn insertion(score: FScore) -> Element {
+    Element { pointer: Pointer::UP, score }
+}
+
+pub fn deletion(score: FScore) -> Element {
+    Element { pointer: Pointer::LEFT, score }
+}
+
+pub fn substitution(score: FScore) -> Element {
+    Element { pointer: Pointer::DIAGONAL, score }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
+    use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig, deletion, insertion, substitution};
     use crate::aligner::Aligner;
-    use crate::matrix::Element::{Substitution, Deletion, Insertion, Initial, Start};
     use crate::matrix;
-    use crate::matrix::{Columnar, Matrix, FScore};
+    use crate::matrix::{Columnar, Matrix};
     use crate::alignment::Alignment;
+    use crate::element::{INITIAL, FScore};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -143,12 +151,12 @@ mod tests {
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Initial
+            INITIAL
         );
         for i in 1..3 {
             assert_eq!(
                 mtx[(0, i)],
-                Deletion(-(i as FScore))
+                deletion(-(i as FScore))
             );
         }
     }
@@ -159,12 +167,12 @@ mod tests {
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Initial
+            INITIAL
         );
         for i in 1..3 {
             assert_eq!(
                 mtx[(i, 0)],
-                Insertion(-(i as FScore))
+                insertion(-(i as FScore))
             );
         }
     }
@@ -173,14 +181,14 @@ mod tests {
     fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
-                [Start, Deletion(-1.0)],
-                [Insertion(-1.0), Substitution(0.0)]
+                [INITIAL, deletion(-1.0)],
+                [insertion(-1.0), substitution(0.0)]
             ]
         );
         ALIGNER.fill(&mut mtx, "A", "A");
         assert_eq!(
             mtx[(1, 1)],
-            Substitution(1.0)
+            substitution(1.0)
         );
     }
 
@@ -188,8 +196,8 @@ mod tests {
     fn test_trace_back_snp() {
         let mtx = matrix::from_elements(
             &[
-                [Start, Deletion(-1.0)],
-                [Insertion(-1.0), Substitution(1.0)]
+                [INITIAL, deletion(-1.0)],
+                [insertion(-1.0), substitution(1.0)]
             ]
         );
         assert_eq!(
@@ -202,8 +210,8 @@ mod tests {
     fn test_trace_back_insertion() {
         let mtx = matrix::from_elements(
             &[
-                [Start],
-                [Insertion(-1.0)]
+                [INITIAL],
+                [insertion(-1.0)]
             ]
         );
         assert_eq!(
@@ -216,7 +224,7 @@ mod tests {
     fn test_trace_back_deletion() {
         let mtx = matrix::from_elements(
             &[
-                [Start, Deletion(-1.0)]
+                [INITIAL, deletion(-1.0)]
             ]
         );
         assert_eq!(

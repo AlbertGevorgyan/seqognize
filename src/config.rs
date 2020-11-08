@@ -1,4 +1,4 @@
-use crate::matrix::FScore;
+use crate::element::FScore;
 
 pub trait AlignmentConfig {
     fn get_substitution_score(&self, pos: (usize, usize), s: u8, r: u8) -> FScore;

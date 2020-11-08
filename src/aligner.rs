@@ -6,7 +6,6 @@ pub trait Aligner<C>: From<C>
     where C: AlignmentConfig {
     fn align(&self, subject: &str, reference: &str) -> Alignment {
         let mut mtx: Matrix = self.create_mtx(subject, reference);
-        self.fill_start(&mut mtx);
         self.fill_top_row(&mut mtx);
         self.fill_left_column(&mut mtx);
         self.fill(&mut mtx, &subject, &reference);
@@ -15,8 +14,6 @@ pub trait Aligner<C>: From<C>
     }
 
     fn create_mtx(&self, subject: &str, reference: &str) -> Matrix;
-
-    fn fill_start(&self, mtx: &mut Matrix);
 
     fn fill_top_row(&self, mtx: &mut Matrix);
 

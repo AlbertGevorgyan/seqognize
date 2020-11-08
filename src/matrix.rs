@@ -3,27 +3,7 @@ use crate::element::{Pointer, Element};
 
 pub type Idx = (usize, usize);
 
-pub trait Columnar {
-    fn of(num_rows: usize, num_columns: usize) -> Self;
-    fn num_rows(&self) -> usize;
-    fn num_columns(&self) -> usize;
-}
-
 pub type Matrix = Array2<Element>;
-
-impl Columnar for Matrix {
-    fn of(num_rows: usize, num_columns: usize) -> Self {
-        Matrix::from_elem((num_rows, num_columns), Element::default())
-    }
-
-    fn num_rows(&self) -> usize {
-        self.dim().0
-    }
-
-    fn num_columns(&self) -> usize {
-        self.dim().1
-    }
-}
 
 pub fn move_back(element: &Element, position: Idx) -> Idx {
     let (row, column) = position;
@@ -35,25 +15,12 @@ pub fn move_back(element: &Element, position: Idx) -> Idx {
     }
 }
 
+pub(crate) fn of(num_rows: usize, num_columns: usize) -> Matrix {
+    Matrix::from_elem((num_rows, num_columns), Element::default())
+}
+
 pub fn from_elements<V>(elements: &[V]) -> Matrix
     where V: Clone + FixedInitializer<Elem=Element> {
     arr2(&elements)
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::matrix::{Columnar, Matrix};
-
-    #[test]
-    fn test_dimensions() {
-        let mtx = Matrix::of(3, 2);
-        assert_eq!(
-            mtx.num_rows(),
-            3
-        );
-        assert_eq!(
-            mtx.num_columns(),
-            2
-        );
-    }
-}

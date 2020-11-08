@@ -1,7 +1,7 @@
 use crate::config::AlignmentConfig;
 use crate::aligner::{Aligner};
 use crate::alignment::{Alignment, AlignmentBuilder};
-use crate::matrix::{Matrix, Columnar, Idx};
+use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
 use crate::iterators::{SeqIterator, accumulate, set_accumulated};
 use crate::element::{FScore, Element, Pointer};
@@ -37,13 +37,13 @@ impl From<NtAlignmentConfig> for GlobalNtAligner {
 
 impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn create_mtx(&self, subject: &str, reference: &str) -> Matrix {
-        Matrix::of(subject.len() + 1, reference.len() + 1)
+        matrix::of(subject.len() + 1, reference.len() + 1)
     }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
         set_accumulated(
             accumulate(
-                mtx.num_columns(),
+                mtx.cols(),
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
             mtx.row_mut(0).iter_mut(),
@@ -54,7 +54,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     fn fill_left_column(&self, mtx: &mut Matrix) {
         set_accumulated(
             accumulate(
-                mtx.num_rows(),
+                mtx.rows(),
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
             mtx.column_mut(0).iter_mut(),
@@ -64,10 +64,10 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
 
     fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
         let mut subject_iterator = SeqIterator::from(subject);
-        for row in 1..mtx.num_rows() {
+        for row in 1..mtx.rows() {
             let s = subject_iterator.next_byte();
             let mut reference_iterator = SeqIterator::from(reference);
-            for col in 1..mtx.num_columns() {
+            for col in 1..mtx.cols() {
                 let r = reference_iterator.next_byte();
                 mtx[(row, col)] = select(
                     mtx[(row - 1, col - 1)] +
@@ -82,7 +82,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 
     fn end_idx(&self, mtx: &Matrix) -> Idx {
-        (mtx.num_rows() - 1, mtx.num_columns() - 1)
+        (mtx.rows() - 1, mtx.cols() - 1)
     }
 
     fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
@@ -124,7 +124,7 @@ mod tests {
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig, deletion, insertion, substitution};
     use crate::aligner::Aligner;
     use crate::matrix;
-    use crate::matrix::{Columnar, Matrix};
+    use crate::matrix::{Matrix};
     use crate::alignment::Alignment;
     use crate::element::{FScore, Element};
 
@@ -141,13 +141,13 @@ mod tests {
     fn test_create_mtx() {
         assert_eq!(
             ALIGNER.create_mtx("ss", "rrr"),
-            Matrix::of(3, 4)
+            matrix::of(3, 4)
         )
     }
 
     #[test]
     fn test_fill_top_row() {
-        let mut mtx = Matrix::of(2, 3);
+        let mut mtx = matrix::of(2, 3);
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_fill_left_column() {
-        let mut mtx = Matrix::of(3, 2);
+        let mut mtx = matrix::of(3, 2);
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),

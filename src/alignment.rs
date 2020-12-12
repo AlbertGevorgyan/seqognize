@@ -1,7 +1,5 @@
 use std::collections::VecDeque;
-use crate::element::{FScore, Element, Pointer};
-use std::iter::Rev;
-use std::str::Bytes;
+use crate::element::{FScore, Pointer};
 use crate::matrix::Idx;
 
 pub const GAP: char = '_';
@@ -13,38 +11,51 @@ struct Anchor {
 }
 
 impl Anchor {
-    fn from(r_idx: usize, s_idx: usize, pointer: Pointer) -> Self {
-        Anchor {
-            idx: (r_idx, s_idx),
-            pointer,
-        }
+    fn from(idx: Idx, pointer: Pointer) -> Self {
+        Anchor { idx, pointer }
     }
 }
 
 fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
-    let mut s_idx = 0;
-    let mut r_idx = 0;
+    let mut idx = MutableIdx::start();
     reference.chars()
         .zip(subject.chars())
-        .map(|(r, s)| {
-            let pointer = match (r, s) {
-                (GAP, _) => {
-                    r_idx += 1;
-                    Pointer::UP
-                }
-                (_, GAP) => {
-                    s_idx += 1;
-                    Pointer::LEFT
-                }
-                _ => {
-                    r_idx += 1;
-                    s_idx += 1;
-                    Pointer::DIAGONAL
-                }
-            };
-            Anchor::from(r_idx, s_idx, pointer)
-        })
+        .map(|(r, s)| to_anchor(&mut idx, r, s))
         .collect()
+}
+
+fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {
+    match (r, s) {
+        (GAP, _) => Anchor::from(
+            idx.step(1, 0),
+            Pointer::UP,
+        ),
+        (_, GAP) => Anchor::from(
+            idx.step(0, 1),
+            Pointer::LEFT,
+        ),
+        _ => Anchor::from(
+            idx.step(1, 1),
+            Pointer::DIAGONAL,
+        )
+    }
+}
+
+struct MutableIdx {
+    r: usize,
+    s: usize,
+}
+
+impl MutableIdx {
+    fn start() -> Self {
+        MutableIdx { r: 0, s: 0 }
+    }
+
+    fn step(&mut self, r_step: usize, s_step: usize) -> Idx {
+        self.r += r_step;
+        self.s += s_step;
+        (self.r, self.s)
+    }
 }
 
 #[derive(Debug, PartialEq)]

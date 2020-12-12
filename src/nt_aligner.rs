@@ -90,7 +90,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let element = mtx[cursor];
-            builder.take(&element);
+            builder.take(element.pointer, cursor);
             cursor = matrix::move_back(&element, cursor);
         }
         builder.build(mtx[end_index].score)
@@ -202,7 +202,7 @@ mod tests {
         );
         assert_eq!(
             ALIGNER.trace_back(&mtx, (1, 1), "A", "A"),
-            Alignment::new("A", "A", 1.0)
+            Alignment::from("A", "A", 1.0)
         );
     }
 
@@ -216,7 +216,7 @@ mod tests {
         );
         assert_eq!(
             ALIGNER.trace_back(&mtx, (1, 0), "A", ""),
-            Alignment::new("A", "_", -1.0)
+            Alignment::from("A", "_", -1.0)
         );
     }
 
@@ -229,7 +229,7 @@ mod tests {
         );
         assert_eq!(
             ALIGNER.trace_back(&mtx, (0, 1), "", "A"),
-            Alignment::new("_", "A", -1.0)
+            Alignment::from("_", "A", -1.0)
         );
     }
 
@@ -237,7 +237,7 @@ mod tests {
     fn test_match() {
         assert_eq!(
             ALIGNER.align("AGCT", "AGCT"),
-            Alignment::new("AGCT", "AGCT", 4.0)
+            Alignment::from("AGCT", "AGCT", 4.0)
         )
     }
 
@@ -245,7 +245,7 @@ mod tests {
     fn test_mismatch() {
         assert_eq!(
             ALIGNER.align("AGAT", "AGCT"),
-            Alignment::new("AGAT", "AGCT", 2.0)
+            Alignment::from("AGAT", "AGCT", 2.0)
         )
     }
 
@@ -253,7 +253,7 @@ mod tests {
     fn test_insertion() {
         assert_eq!(
             ALIGNER.align("AGCT", "AGT"),
-            Alignment::new("AGCT", "AG_T", 2.0)
+            Alignment::from("AGCT", "AG_T", 2.0)
         )
     }
 
@@ -261,7 +261,7 @@ mod tests {
     fn test_deletion() {
         assert_eq!(
             ALIGNER.align("AGT", "AGCT"),
-            Alignment::new("AG_T", "AGCT", 2.0)
+            Alignment::from("AG_T", "AGCT", 2.0)
         )
     }
 
@@ -269,7 +269,7 @@ mod tests {
     fn test_double_insertion() {
         assert_eq!(
             ALIGNER.align("AGCT", "AT"),
-            Alignment::new("AGCT", "A__T", 0.0)
+            Alignment::from("AGCT", "A__T", 0.0)
         )
     }
 
@@ -277,7 +277,7 @@ mod tests {
     fn test_double_deletion() {
         assert_eq!(
             ALIGNER.align("AT", "AGCT"),
-            Alignment::new("A__T", "AGCT", 0.0)
+            Alignment::from("A__T", "AGCT", 0.0)
         )
     }
 
@@ -285,7 +285,7 @@ mod tests {
     fn test_leading_insertion() {
         assert_eq!(
             ALIGNER.align("AGCT", "GCT"),
-            Alignment::new("AGCT", "_GCT", 2.0)
+            Alignment::from("AGCT", "_GCT", 2.0)
         )
     }
 
@@ -293,7 +293,7 @@ mod tests {
     fn test_leading_deletion() {
         assert_eq!(
             ALIGNER.align("GCT", "AGCT"),
-            Alignment::new("_GCT", "AGCT", 2.0)
+            Alignment::from("_GCT", "AGCT", 2.0)
         )
     }
 
@@ -301,7 +301,7 @@ mod tests {
     fn test_trailing_insertion() {
         assert_eq!(
             ALIGNER.align("AGCT", "AGC"),
-            Alignment::new("AGCT", "AGC_", 2.0)
+            Alignment::from("AGCT", "AGC_", 2.0)
         )
     }
 
@@ -309,7 +309,7 @@ mod tests {
     fn test_trailing_deletion() {
         assert_eq!(
             ALIGNER.align("AGC", "AGCT"),
-            Alignment::new("AGC_", "AGCT", 2.0)
+            Alignment::from("AGC_", "AGCT", 2.0)
         )
     }
 
@@ -317,7 +317,7 @@ mod tests {
     fn test_two_insertions() {
         assert_eq!(
             ALIGNER.align("AGCT", "GT"),
-            Alignment::new("AGCT", "_G_T", 0.0)
+            Alignment::from("AGCT", "_G_T", 0.0)
         )
     }
 
@@ -325,7 +325,7 @@ mod tests {
     fn test_two_deletions() {
         assert_eq!(
             ALIGNER.align("AC", "AGCT"),
-            Alignment::new("A_C_", "AGCT", 0.0)
+            Alignment::from("A_C_", "AGCT", 0.0)
         )
     }
 
@@ -333,7 +333,7 @@ mod tests {
     fn test_empty_subject() {
         assert_eq!(
             ALIGNER.align("", "AGCT"),
-            Alignment::new("____", "AGCT", -4.0)
+            Alignment::from("____", "AGCT", -4.0)
         )
     }
 
@@ -341,7 +341,7 @@ mod tests {
     fn test_empty_reference() {
         assert_eq!(
             ALIGNER.align("AGCT", ""),
-            Alignment::new("AGCT", "____", -4.0)
+            Alignment::from("AGCT", "____", -4.0)
         )
     }
 }

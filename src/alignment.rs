@@ -2,95 +2,85 @@ use std::collections::VecDeque;
 use crate::element::{FScore, Element, Pointer};
 use std::iter::Rev;
 use std::str::Bytes;
+use crate::matrix::Idx;
 
 pub const GAP: char = '_';
 
 #[derive(Debug, PartialEq)]
+struct Anchor {
+    idx: Idx,
+    pointer: Pointer,
+}
+
+impl Anchor {
+    fn from(r_idx: usize, s_idx: usize, pointer: Pointer) -> Self {
+        Anchor {
+            idx: (r_idx, s_idx),
+            pointer,
+        }
+    }
+}
+
+fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
+    let mut s_idx = 0;
+    let mut r_idx = 0;
+    reference.chars()
+        .zip(subject.chars())
+        .map(|(r, s)| {
+            let pointer = match (r, s) {
+                (GAP, _) => {
+                    r_idx += 1;
+                    Pointer::UP
+                }
+                (_, GAP) => {
+                    s_idx += 1;
+                    Pointer::LEFT
+                }
+                _ => {
+                    r_idx += 1;
+                    s_idx += 1;
+                    Pointer::DIAGONAL
+                }
+            };
+            Anchor::from(r_idx, s_idx, pointer)
+        })
+        .collect()
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Alignment {
-    subject: String,
-    reference: String,
     pub score: FScore,
+    anchors: VecDeque<Anchor>,
 }
 
 impl Alignment {
-    pub fn new(subject: &str, reference: &str, score: FScore) -> Self {
+    pub fn from(subject: &str, reference: &str, score: FScore) -> Self {
         Alignment {
-            subject: subject.to_string(),
-            reference: reference.to_string(),
             score,
+            anchors: to_anchors(subject, reference),
         }
     }
 }
 
-pub struct AlignmentBuilder<'a> {
-    pub subject_builder: AlignedSequenceBuilder<'a>,
-    pub reference_builder: AlignedSequenceBuilder<'a>,
+pub struct AlignmentBuilder {
+    anchors: VecDeque<Anchor>,
 }
 
-impl AlignmentBuilder<'_> {
-    pub fn new<'a>(subject: &'a str, reference: &'a str) -> AlignmentBuilder<'a> {
-        let capacity = subject.len() + reference.len();
+impl AlignmentBuilder {
+    pub fn new(subject: &str, reference: &str) -> AlignmentBuilder {
         AlignmentBuilder {
-            subject_builder: AlignedSequenceBuilder::from(subject, capacity),
-            reference_builder: AlignedSequenceBuilder::from(reference, capacity),
+            anchors: VecDeque::with_capacity(subject.len() + reference.len()),
         }
     }
 
-    pub fn take(&mut self, element: &Element) {
-        match element.pointer {
-            Pointer::DIAGONAL => self.take_both(),
-            Pointer::UP => self.gap_reference(),
-            Pointer::LEFT => self.gap_subject(),
-            _ => unreachable!()
-        };
-    }
-
-    fn take_both(&mut self) {
-        self.subject_builder.take();
-        self.reference_builder.take();
-    }
-
-    fn gap_subject(&mut self) {
-        self.subject_builder.gap();
-        self.reference_builder.take();
-    }
-
-    fn gap_reference(&mut self) {
-        self.subject_builder.take();
-        self.reference_builder.gap();
+    pub fn take(&mut self, pointer: Pointer, idx: Idx) {
+        self.anchors.push_front(Anchor { idx, pointer })
     }
 
     pub fn build(self, score: FScore) -> Alignment {
         Alignment {
-            subject: self.subject_builder.build(),
-            reference: self.reference_builder.build(),
             score,
+            anchors: self.anchors,
         }
-    }
-}
-
-pub struct AlignedSequenceBuilder<'a> {
-    source: Rev<Bytes<'a>>,
-    aligned: VecDeque<u8>,
-}
-
-impl AlignedSequenceBuilder<'_> {
-    pub fn from(sequence: &str, capacity: usize) -> AlignedSequenceBuilder {
-        AlignedSequenceBuilder {
-            source: sequence.bytes().rev(),
-            aligned: VecDeque::with_capacity(capacity),
-        }
-    }
-
-    pub fn take(&mut self) {
-        self.aligned.push_front(self.source.next().unwrap());
-    }
-
-    pub fn gap(&mut self) {
-        self.aligned.push_front(GAP as u8);
-    }
-
-    pub fn build(self) -> String {
-        String::from_utf8(Vec::from(self.aligned)).unwrap()
     }
 }

@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
 use crate::element::{FScore, Op};
 use crate::matrix::Idx;
+use core::iter;
 
 pub const GAP: char = '_';
 
@@ -11,54 +12,10 @@ struct Anchor {
 }
 
 impl Anchor {
-    const START: Anchor = Anchor { idx: (0, 0), op: Op::START };
+    const START: Self = Self { idx: (0, 0), op: Op::START };
 
     fn from(idx: Idx, op: Op) -> Self {
         Anchor { idx, op }
-    }
-}
-
-fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
-    let mut idx = MutableIdx::start();
-    let mut anchors: VecDeque<Anchor> = reference.chars()
-        .zip(subject.chars())
-        .map(|(r, s)| to_anchor(&mut idx, r, s))
-        .collect();
-    anchors.push_front(Anchor::START);
-    anchors
-}
-
-fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {
-    match (r, s) {
-        (GAP, _) => Anchor::from(
-            idx.step(1, 0),
-            Op::INSERT,
-        ),
-        (_, GAP) => Anchor::from(
-            idx.step(0, 1),
-            Op::DELETE,
-        ),
-        _ => Anchor::from(
-            idx.step(1, 1),
-            Op::MATCH,
-        )
-    }
-}
-
-struct MutableIdx {
-    r: usize,
-    s: usize,
-}
-
-impl MutableIdx {
-    fn start() -> Self {
-        MutableIdx { r: 0, s: 0 }
-    }
-
-    fn step(&mut self, r_step: usize, s_step: usize) -> Idx {
-        self.r += r_step;
-        self.s += s_step;
-        (self.r, self.s)
     }
 }
 
@@ -97,5 +54,48 @@ impl AlignmentBuilder {
             score,
             anchors: self.anchors,
         }
+    }
+}
+
+fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
+    iter::once(Anchor::START)
+        .chain(from_strings(subject, reference))
+        .collect()
+}
+
+fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=Anchor> + 'a {
+    let mut idx = MutableIdx::START;
+    reference.chars()
+        .zip(subject.chars())
+        .map(move |(r, s)| to_anchor(&mut idx, r, s))
+}
+
+fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {
+    match (r, s) {
+        (GAP, _) => Anchor::from(
+            idx.inc(0, 1),
+            Op::INSERT,
+        ),
+        (_, GAP) => Anchor::from(
+            idx.inc(1, 0),
+            Op::DELETE,
+        ),
+        _ => Anchor::from(
+            idx.inc(1, 1),
+            Op::MATCH,
+        )
+    }
+}
+
+struct MutableIdx {
+    idx: Idx
+}
+
+impl MutableIdx {
+    const START: Self = Self { idx: (0, 0) };
+
+    fn inc(&mut self, s_step: usize, r_step: usize) -> Idx {
+        self.idx = (self.idx.0 + r_step, self.idx.1 + s_step);
+        self.idx
     }
 }

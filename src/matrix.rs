@@ -1,5 +1,5 @@
 use ndarray::{Array2, FixedInitializer, arr2};
-use crate::element::{Pointer, Element};
+use crate::element::{Op, Element};
 
 pub type Idx = (usize, usize);
 
@@ -16,10 +16,10 @@ pub fn from_elements<V>(elements: &[V]) -> Matrix
 
 pub fn move_back(element: &Element, position: Idx) -> Idx {
     let (row, column) = position;
-    match element.pointer {
-        Pointer::DIAGONAL => (row - 1, column - 1),
-        Pointer::UP => (row - 1, column),
-        Pointer::LEFT => (row, column - 1),
+    match element.op {
+        Op::MATCH => (row - 1, column - 1),
+        Op::INSERT => (row - 1, column),
+        Op::DELETE => (row, column - 1),
         _ => unreachable!()
     }
 }

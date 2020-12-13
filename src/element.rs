@@ -3,16 +3,16 @@ use std::ops::Add;
 pub type FScore = f64;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub enum Pointer {
-    UNDEF,
-    UP,
-    DIAGONAL,
-    LEFT,
+pub enum Op {
+    START,
+    INSERT,
+    MATCH,
+    DELETE,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Element {
-    pub pointer: Pointer,
+    pub op: Op,
     pub score: FScore,
 }
 
@@ -26,7 +26,7 @@ impl Add<FScore> for Element {
 
 impl Default for Element {
     fn default() -> Self {
-        Element { pointer: Pointer::UNDEF, score: 0.0 }
+        Element { op: Op::START, score: 0.0 }
     }
 }
 

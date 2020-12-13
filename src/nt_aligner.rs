@@ -4,7 +4,7 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
 use crate::iterators::{SeqIterator, accumulate, set_accumulated};
-use crate::element::{FScore, Element, Pointer};
+use crate::element::{FScore, Element, Op};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -90,7 +90,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         let mut cursor = end_index;
         while cursor != (0, 0) {
             let element = mtx[cursor];
-            builder.take(element.pointer, cursor);
+            builder.take(element.op, cursor);
             cursor = matrix::move_back(&element, cursor);
         }
         builder.build(mtx[end_index].score)
@@ -108,15 +108,15 @@ fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: F
 }
 
 pub fn insertion(score: FScore) -> Element {
-    Element { pointer: Pointer::UP, score }
+    Element { op: Op::INSERT, score }
 }
 
 pub fn deletion(score: FScore) -> Element {
-    Element { pointer: Pointer::LEFT, score }
+    Element { op: Op::DELETE, score }
 }
 
 pub fn substitution(score: FScore) -> Element {
-    Element { pointer: Pointer::DIAGONAL, score }
+    Element { op: Op::MATCH, score }
 }
 
 #[cfg(test)]
@@ -124,7 +124,6 @@ mod tests {
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig, deletion, insertion, substitution};
     use crate::aligner::Aligner;
     use crate::matrix;
-    use crate::matrix::{Matrix};
     use crate::alignment::Alignment;
     use crate::element::{FScore, Element};
 

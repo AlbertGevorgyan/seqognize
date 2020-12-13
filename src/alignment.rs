@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use crate::element::{FScore, Pointer};
+use crate::element::{FScore, Op};
 use crate::matrix::Idx;
 
 pub const GAP: char = '_';
@@ -7,12 +7,12 @@ pub const GAP: char = '_';
 #[derive(Debug, PartialEq)]
 struct Anchor {
     idx: Idx,
-    pointer: Pointer,
+    op: Op,
 }
 
 impl Anchor {
-    fn from(idx: Idx, pointer: Pointer) -> Self {
-        Anchor { idx, pointer }
+    fn from(idx: Idx, op: Op) -> Self {
+        Anchor { idx, op }
     }
 }
 
@@ -28,15 +28,15 @@ fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {
     match (r, s) {
         (GAP, _) => Anchor::from(
             idx.step(1, 0),
-            Pointer::UP,
+            Op::INSERT,
         ),
         (_, GAP) => Anchor::from(
             idx.step(0, 1),
-            Pointer::LEFT,
+            Op::DELETE,
         ),
         _ => Anchor::from(
             idx.step(1, 1),
-            Pointer::DIAGONAL,
+            Op::MATCH,
         )
     }
 }
@@ -84,8 +84,8 @@ impl AlignmentBuilder {
         }
     }
 
-    pub fn take(&mut self, pointer: Pointer, idx: Idx) {
-        self.anchors.push_front(Anchor { idx, pointer })
+    pub fn take(&mut self, op: Op, idx: Idx) {
+        self.anchors.push_front(Anchor { idx, op })
     }
 
     pub fn build(self, score: FScore) -> Alignment {

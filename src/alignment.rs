@@ -65,52 +65,44 @@ fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
 
 fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=Anchor> + 'a {
     let mut inc = IdxIncrementer::START;
-    reference.chars()
-        .zip(subject.chars())
-        .map(move |(r, s)|
+    subject.chars()
+        .zip(reference.chars())
+        .map(move |(s, r)|
             Anchor::from(
-                inc.with(r, s),
-                op(r, s),
+                inc.with(s, r),
+                op(s, r),
             )
         )
 }
 
-fn op(r: char, s: char) -> Op {
-    match (r, s) {
-        (GAP, _) => Op::INSERT,
-        (_, GAP) => Op::DELETE,
+fn op(s: char, r: char) -> Op {
+    match (s, r) {
+        (GAP, _) => Op::DELETE,
+        (_, GAP) => Op::INSERT,
         _ => Op::MATCH
     }
 }
 
 struct IdxIncrementer {
-    s_inc: Incrementer,
-    r_inc: Incrementer,
+    s_inc: usize,
+    r_inc: usize,
 }
 
 impl IdxIncrementer {
-    const START: Self = Self { r_inc: Incrementer::START, s_inc: Incrementer::START };
+    const START: Self = Self { r_inc: 0, s_inc: 0 };
 
     fn with(&mut self, s: char, r: char) -> Idx {
         (
-            self.r_inc.with(r),
-            self.s_inc.with(s),
+            Self::with_char(&mut self.s_inc, s),
+            Self::with_char(&mut self.r_inc, r)
         )
     }
-}
 
-struct Incrementer {
-    i: usize
-}
-
-impl Incrementer {
-    const START: Self = Self { i: 0 };
-
-    fn with(&mut self, c: char) -> usize {
+    fn with_char(i: &mut usize, c: char) -> usize {
         if c != GAP {
-            self.i += 1;
+            *i += 1;
         }
-        self.i
+        *i
     }
 }
 

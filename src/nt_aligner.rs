@@ -93,6 +93,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             builder.take(element.op, cursor);
             cursor = matrix::move_back(&element, cursor);
         }
+        builder.take(Op::START, cursor);
         builder.build(mtx[end_index].score)
     }
 }

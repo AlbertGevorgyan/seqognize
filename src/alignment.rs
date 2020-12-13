@@ -11,6 +11,8 @@ struct Anchor {
 }
 
 impl Anchor {
+    const START: Anchor = Anchor { idx: (0, 0), op: Op::START };
+
     fn from(idx: Idx, op: Op) -> Self {
         Anchor { idx, op }
     }
@@ -18,10 +20,12 @@ impl Anchor {
 
 fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
     let mut idx = MutableIdx::start();
-    reference.chars()
+    let mut anchors: VecDeque<Anchor> = reference.chars()
         .zip(subject.chars())
         .map(|(r, s)| to_anchor(&mut idx, r, s))
-        .collect()
+        .collect();
+    anchors.push_front(Anchor::START);
+    anchors
 }
 
 fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {

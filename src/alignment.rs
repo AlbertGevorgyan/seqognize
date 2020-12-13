@@ -64,38 +64,53 @@ fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
 }
 
 fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=Anchor> + 'a {
-    let mut idx = MutableIdx::START;
+    let mut inc = IdxIncrementer::START;
     reference.chars()
         .zip(subject.chars())
-        .map(move |(r, s)| to_anchor(&mut idx, r, s))
+        .map(move |(r, s)|
+            Anchor::from(
+                inc.with(r, s),
+                op(r, s),
+            )
+        )
 }
 
-fn to_anchor(idx: &mut MutableIdx, r: char, s: char) -> Anchor {
+fn op(r: char, s: char) -> Op {
     match (r, s) {
-        (GAP, _) => Anchor::from(
-            idx.inc(0, 1),
-            Op::INSERT,
-        ),
-        (_, GAP) => Anchor::from(
-            idx.inc(1, 0),
-            Op::DELETE,
-        ),
-        _ => Anchor::from(
-            idx.inc(1, 1),
-            Op::MATCH,
+        (GAP, _) => Op::INSERT,
+        (_, GAP) => Op::DELETE,
+        _ => Op::MATCH
+    }
+}
+
+struct IdxIncrementer {
+    s_inc: Incrementer,
+    r_inc: Incrementer,
+}
+
+impl IdxIncrementer {
+    const START: Self = Self { r_inc: Incrementer::START, s_inc: Incrementer::START };
+
+    fn with(&mut self, s: char, r: char) -> Idx {
+        (
+            self.r_inc.with(r),
+            self.s_inc.with(s),
         )
     }
 }
 
-struct MutableIdx {
-    idx: Idx
+struct Incrementer {
+    i: usize
 }
 
-impl MutableIdx {
-    const START: Self = Self { idx: (0, 0) };
+impl Incrementer {
+    const START: Self = Self { i: 0 };
 
-    fn inc(&mut self, s_step: usize, r_step: usize) -> Idx {
-        self.idx = (self.idx.0 + r_step, self.idx.1 + s_step);
-        self.idx
+    fn with(&mut self, c: char) -> usize {
+        if c != GAP {
+            self.i += 1;
+        }
+        self.i
     }
 }
+

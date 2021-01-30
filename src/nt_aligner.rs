@@ -14,13 +14,13 @@ pub struct NtAlignmentConfig {
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
-    fn get_substitution_score(&self, pos: (usize, usize), s: u8, r: u8) -> FScore {
+    fn get_substitution_score(&self, _pos: (usize, usize), s: u8, r: u8) -> FScore {
         if s == r { self.match_score } else { self.mismatch_penalty }
     }
-    fn get_subject_gap_opening_penalty(&self, pos: usize) -> FScore {
+    fn get_subject_gap_opening_penalty(&self, _pos: usize) -> FScore {
         self.subject_gap_penalty
     }
-    fn get_reference_gap_opening_penalty(&self, pos: usize) -> FScore {
+    fn get_reference_gap_opening_penalty(&self, _pos: usize) -> FScore {
         self.reference_gap_penalty
     }
 }

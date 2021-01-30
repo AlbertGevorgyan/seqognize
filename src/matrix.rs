@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use ndarray::{Array2, FixedInitializer, arr2};
 use crate::element::{Op, Element};
 

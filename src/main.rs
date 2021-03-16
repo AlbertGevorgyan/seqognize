@@ -3,6 +3,8 @@
 use seqognize::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
 use seqognize::aligner::Aligner;
 use clap::{App, Arg, ArgMatches};
+use std::str::FromStr;
+use std::fmt::Debug;
 
 mod matrix;
 mod aligner;
@@ -49,6 +51,10 @@ fn main() {
             .long("rg")
             .help("Reference gap opening")
             .takes_value(true))
+        .arg(Arg::with_name("vertical")
+            .long("vertical")
+            .help("Vertical output")
+            .takes_value(false))
         .get_matches();
 
     let reference = matches.value_of("reference").unwrap();
@@ -65,9 +71,14 @@ fn main() {
 
     let alignment = aligner.align(subject, reference);
     println!("Score: {:?}", alignment.score);
-    alignment.print(&reference, &subject);
+    if matches.is_present("vertical") {
+        alignment.print_vertical(&reference, &subject);
+    } else {
+        alignment.print_horizontal(&reference, &subject);
+    }
 }
 
-fn arg(matches: &ArgMatches, argname: &str, default: f64) -> f64 {
+fn arg<T: FromStr + Debug>(matches: &ArgMatches, argname: &str, default: T) -> T
+    where <T as std::str::FromStr>::Err: std::fmt::Debug {
     matches.value_of(argname).map(|s| s.parse().unwrap()).unwrap_or(default)
 }

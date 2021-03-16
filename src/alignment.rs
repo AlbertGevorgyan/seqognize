@@ -33,19 +33,37 @@ impl Alignment {
         }
     }
 
-    pub fn print(&self, r: &str, s: &str) {
-        let rs: Vec<char> = r.chars().collect();
-        let ss: Vec<char> = s.chars().collect();
+    pub fn pairs(&self, reference: &str, subject: &str) -> impl Iterator<Item=(char, char)> + '_ {
+        let rs: Vec<char> = reference.chars().collect();
+        let ss: Vec<char> = subject.chars().collect();
         self.anchors
             .iter()
             .skip(1)
-            .map(|a| match a.op {
+            .map(move |a| match a.op {
                 Op::START => ('_', '_'),
                 Op::MATCH => (rs[a.idx.1 - 1], ss[a.idx.0 - 1]),
                 Op::INSERT => (GAP, ss[a.idx.0 - 1]),
                 Op::DELETE => (rs[a.idx.1 - 1], GAP)
             })
+    }
+
+    pub fn print_horizontal(&self, reference: &str, subject: &str) {
+        let als = self.aligned_sequences(&reference, &subject);
+        println!("{:?}", als.0);
+        println!("{:?}", als.1);
+    }
+
+    pub fn print_vertical(&self, r: &str, s: &str) {
+        self.pairs(r, s)
             .for_each(|p| println!("{:?} {:?}", p.0, p.1));
+    }
+
+    pub fn aligned_sequences(&self, reference: &str, subject: &str) -> (String, String) {
+        let pairs: Vec<(char, char)> = self.pairs(reference, subject).collect();
+        (
+            pairs.iter().map(|p| p.0).collect(),
+            pairs.iter().map(|p| p.1).collect()
+        )
     }
 }
 

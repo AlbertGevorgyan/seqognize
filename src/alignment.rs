@@ -6,9 +6,9 @@ use core::iter;
 pub const GAP: char = '_';
 
 #[derive(Debug, PartialEq)]
-struct Anchor {
-    idx: Idx,
-    op: Op,
+pub struct Anchor {
+    pub idx: Idx,
+    pub op: Op,
 }
 
 impl Anchor {
@@ -22,7 +22,7 @@ impl Anchor {
 #[derive(Debug, PartialEq)]
 pub struct Alignment {
     pub score: FScore,
-    anchors: VecDeque<Anchor>,
+    pub anchors: VecDeque<Anchor>,
 }
 
 impl Alignment {
@@ -31,6 +31,21 @@ impl Alignment {
             score,
             anchors: to_anchors(subject, reference),
         }
+    }
+
+    pub fn print(&self, r: &str, s: &str) {
+        let rs: Vec<char> = r.chars().collect();
+        let ss: Vec<char> = s.chars().collect();
+        self.anchors
+            .iter()
+            .skip(1)
+            .map(|a| match a.op {
+                Op::START => ('_', '_'),
+                Op::MATCH => (rs[a.idx.1 - 1], ss[a.idx.0 - 1]),
+                Op::INSERT => (GAP, ss[a.idx.0 - 1]),
+                Op::DELETE => (rs[a.idx.1 - 1], GAP)
+            })
+            .for_each(|p| println!("{:?} {:?}", p.0, p.1));
     }
 }
 

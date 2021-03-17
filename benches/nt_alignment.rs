@@ -10,8 +10,8 @@ fn nt_alignment_benchmark(c: &mut Criterion) {
         config: NtAlignmentConfig {
             match_score: 1.0,
             mismatch_penalty: -1.0,
-            subject_gap_penalty: -1.0,
-            reference_gap_penalty: -1.0,
+            subject_gap_opening_penalty: -1.0,
+            reference_gap_opening_penalty: -1.0,
         }
     };
     c.bench_function("NT alignment", |b| b.iter(|| aligner.align(b"ACGTACT", b"ACTACGT")));

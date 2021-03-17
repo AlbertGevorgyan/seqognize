@@ -64,8 +64,10 @@ fn main() {
         config: NtAlignmentConfig {
             match_score: arg(&matches, "match", 1.0),
             mismatch_penalty: arg(&matches, "mismatch", -1.0),
-            subject_gap_penalty: arg(&matches, "subject_gap", -1.0),
-            reference_gap_penalty: arg(&matches, "reference_gap", -1.0),
+            subject_gap_opening_penalty: arg(&matches, "subject_gap", -1.0),
+            reference_gap_opening_penalty: arg(&matches, "reference_gap", -1.0),
+            subject_gap_extension_penalty: -0.5,
+            reference_gap_extension_penalty: -0.5,
         }
     };
 

@@ -4,24 +4,36 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
 use crate::iterators::{accumulate, set_accumulated};
-use crate::element::{FScore, Element, Op};
+use crate::element::{FScore, Element, Op, Triple};
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
     pub mismatch_penalty: FScore,
-    pub subject_gap_penalty: FScore,
-    pub reference_gap_penalty: FScore,
+    pub subject_gap_opening_penalty: FScore,
+    pub reference_gap_opening_penalty: FScore,
+    pub subject_gap_extension_penalty: FScore,
+    pub reference_gap_extension_penalty: FScore,
 }
 
 impl AlignmentConfig for NtAlignmentConfig {
     fn get_substitution_score(&self, _pos: (usize, usize), s: u8, r: u8) -> FScore {
         if s == r { self.match_score } else { self.mismatch_penalty }
     }
+
     fn get_subject_gap_opening_penalty(&self, _pos: usize) -> FScore {
-        self.subject_gap_penalty
+        self.subject_gap_opening_penalty
     }
+
     fn get_reference_gap_opening_penalty(&self, _pos: usize) -> FScore {
-        self.reference_gap_penalty
+        self.reference_gap_opening_penalty
+    }
+
+    fn get_subject_gap_extension_penalty(&self, _pos: usize) -> f64 {
+        self.subject_gap_extension_penalty
+    }
+
+    fn get_reference_gap_extension_penalty(&self, _pos: usize) -> f64 {
+        self.reference_gap_extension_penalty
     }
 }
 
@@ -43,7 +55,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
             mtx.row_mut(0).iter_mut(),
-            |s| deletion(s),
+            |s| Triple::from(deletion(s), Element::inf(), Element::inf()),
         )
     }
 
@@ -54,7 +66,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
             mtx.column_mut(0).iter_mut(),
-            |s| insertion(s),
+            |s| Triple::from(insertion(s), Element::inf(), Element::inf()),
         );
     }
 
@@ -63,14 +75,15 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
             let s = subject[row - 1];
             for col in 1..mtx.cols() {
                 let r = reference[col - 1];
-                mtx[(row, col)] = select(
-                    mtx[(row - 1, col - 1)] +
+                let m = select(
+                    mtx[(row - 1, col - 1)].m +
                         self.config.get_substitution_score((row, col), s, r),
-                    mtx[(row - 1, col)] +
+                    mtx[(row - 1, col)].m +
                         self.config.get_reference_gap_opening_penalty(row),
-                    mtx[(row, col - 1)] +
+                    mtx[(row, col - 1)].m +
                         self.config.get_subject_gap_opening_penalty(col),
-                )
+                );
+                mtx[(row, col)] = Triple::from(m, mtx[(row, col)].x, mtx[(row, col)].y);
             }
         }
     }
@@ -83,12 +96,12 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         let mut builder = AlignmentBuilder::new(subject, reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
-            let element = mtx[cursor];
+            let element = mtx[cursor].m;
             builder.take(element.op, cursor);
             cursor = matrix::move_back(&element, cursor);
         }
         builder.take(Op::START, cursor);
-        builder.build(mtx[end_index].score)
+        builder.build(mtx[end_index].m.score)
     }
 }
 
@@ -103,15 +116,15 @@ fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: F
 }
 
 pub fn insertion(score: FScore) -> Element {
-    Element { op: Op::INSERT, score }
+    Element::from(Op::INSERT, score)
 }
 
 pub fn deletion(score: FScore) -> Element {
-    Element { op: Op::DELETE, score }
+    Element::from(Op::DELETE, score)
 }
 
 pub fn substitution(score: FScore) -> Element {
-    Element { op: Op::MATCH, score }
+    Element::from(Op::MATCH, score)
 }
 
 #[cfg(test)]
@@ -120,16 +133,26 @@ mod tests {
     use crate::aligner::Aligner;
     use crate::matrix;
     use crate::alignment::Alignment;
-    use crate::element::{FScore, Element};
+    use crate::element::{FScore, Element, Triple};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
             match_score: 1.0,
             mismatch_penalty: -1.0,
-            subject_gap_penalty: -1.0,
-            reference_gap_penalty: -1.0,
+            subject_gap_opening_penalty: -1.0,
+            reference_gap_opening_penalty: -1.0,
+            subject_gap_extension_penalty: -0.5,
+            reference_gap_extension_penalty: -0.5,
         }
     };
+
+    fn with_inf(m: Element) -> Triple {
+        Triple::from(m, Element::inf(), Element::inf())
+    }
+
+    fn with_zeros(m: Element) -> Triple {
+        Triple::from(m, Element::default(), Element::default())
+    }
 
     #[test]
     fn test_fill_top_row() {
@@ -137,12 +160,12 @@ mod tests {
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Element::default()
+            Triple::default()
         );
         for i in 1..3 {
             assert_eq!(
                 mtx[(0, i)],
-                deletion(-(i as FScore))
+                with_inf(deletion(-(i as FScore)))
             );
         }
     }
@@ -153,12 +176,12 @@ mod tests {
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Element::default()
+            Triple::default()
         );
         for i in 1..3 {
             assert_eq!(
                 mtx[(i, 0)],
-                insertion(-(i as FScore))
+                with_inf(insertion(-(i as FScore)))
             );
         }
     }
@@ -167,14 +190,14 @@ mod tests {
     fn test_fill_with_match() {
         let mut mtx = matrix::from_elements(
             &[
-                [Element::default(), deletion(-1.0)],
-                [insertion(-1.0), substitution(0.0)]
+                [Triple::default(), with_inf(deletion(-1.0))],
+                [with_inf(insertion(-1.0)), with_zeros(substitution(0.0))]
             ]
         );
         ALIGNER.fill(&mut mtx, "A".as_bytes(), "A".as_bytes());
         assert_eq!(
             mtx[(1, 1)],
-            substitution(1.0)
+            with_zeros(substitution(1.0))
         );
     }
 
@@ -182,8 +205,8 @@ mod tests {
     fn test_trace_back_snp() {
         let mtx = matrix::from_elements(
             &[
-                [Element::default(), deletion(-1.0)],
-                [insertion(-1.0), substitution(1.0)]
+                [Triple::default(), with_inf(deletion(-1.0))],
+                [with_inf(insertion(-1.0)), with_zeros(substitution(1.0))]
             ]
         );
         assert_eq!(
@@ -196,8 +219,8 @@ mod tests {
     fn test_trace_back_insertion() {
         let mtx = matrix::from_elements(
             &[
-                [Element::default()],
-                [insertion(-1.0)]
+                [Triple::default()],
+                [with_inf(insertion(-1.0))]
             ]
         );
         assert_eq!(
@@ -210,7 +233,7 @@ mod tests {
     fn test_trace_back_deletion() {
         let mtx = matrix::from_elements(
             &[
-                [Element::default(), deletion(-1.0)]
+                [Triple::default(), with_inf(deletion(-1.0))]
             ]
         );
         assert_eq!(
@@ -328,6 +351,15 @@ mod tests {
         assert_eq!(
             ALIGNER.align(b"AGCT", b""),
             Alignment::from("AGCT", "____", -4.0)
+        )
+    }
+
+    #[test]
+    #[ignore]
+    fn test_affine_gap() {
+        assert_eq!(
+            ALIGNER.align("A", "ACG"),
+            Alignment::from("A__", "ACG", -0.5)
         )
     }
 }

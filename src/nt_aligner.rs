@@ -89,7 +89,13 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                     mtx[(row - 1, col)].x +
                         self.config.get_reference_gap_extension_penalty(row),
                 );
-                mtx[(row, col)] = Triple::from(m, insertion(x), mtx[(row, col)].y);
+                let y = min_score(
+                    mtx[(row, col - 1)].m +
+                        self.config.get_subject_gap_opening_penalty(col),
+                    mtx[(row, col - 1)].y +
+                        self.config.get_subject_gap_extension_penalty(col)
+                );
+                mtx[(row, col)] = Triple::from(m, insertion(x), deletion(y));
             }
         }
     }

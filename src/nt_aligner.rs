@@ -83,7 +83,13 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                     mtx[(row, col - 1)].m +
                         self.config.get_subject_gap_opening_penalty(col),
                 );
-                mtx[(row, col)] = Triple::from(m, mtx[(row, col)].x, mtx[(row, col)].y);
+                let x = min_score(
+                    mtx[(row - 1, col)].m +
+                        self.config.get_reference_gap_opening_penalty(row),
+                    mtx[(row - 1, col)].x +
+                        self.config.get_reference_gap_extension_penalty(row),
+                );
+                mtx[(row, col)] = Triple::from(m, insertion(x), mtx[(row, col)].y);
             }
         }
     }
@@ -113,6 +119,10 @@ fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: F
     } else {
         deletion(deletion_score)
     }
+}
+
+fn min_score(s1: FScore, s2: FScore) -> FScore {
+    s1.min(s2)
 }
 
 pub fn insertion(score: FScore) -> Element {

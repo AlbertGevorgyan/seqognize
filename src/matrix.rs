@@ -11,11 +11,6 @@ pub fn of(num_rows: usize, num_columns: usize) -> Matrix {
     Matrix::from_elem((num_rows, num_columns), Triple::default())
 }
 
-pub fn from_elements<V>(elements: &[V]) -> Matrix
-    where V: Clone + FixedInitializer<Elem=Triple> {
-    arr2(&elements)
-}
-
 pub fn move_back(element: &Element, position: Idx) -> Idx {
     let (row, column) = position;
     match element.op {

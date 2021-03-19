@@ -4,7 +4,8 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
 use crate::iterators::{accumulate, set_accumulated};
-use crate::element::{FScore, Element, Op, Triple};
+use crate::element::{FScore, ScoredOp, Op, Triple};
+
 
 pub struct NtAlignmentConfig {
     pub match_score: FScore,
@@ -55,7 +56,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
             mtx.row_mut(0).iter_mut(),
-            |s| Triple::from(deletion(s), Element::inf(), Element::inf()),
+            |s| Triple::from(deletion(s), ScoredOp::inf(), ScoredOp::inf()),
         )
     }
 
@@ -66,7 +67,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
             mtx.column_mut(0).iter_mut(),
-            |s| Triple::from(insertion(s), Element::inf(), Element::inf()),
+            |s| Triple::from(insertion(s), ScoredOp::inf(), ScoredOp::inf()),
         );
     }
 
@@ -117,7 +118,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
     }
 }
 
-fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> Element {
+fn select(substitution_score: FScore, insertion_score: FScore, deletion_score: FScore) -> ScoredOp {
     if substitution_score >= insertion_score && substitution_score >= deletion_score {
         substitution(substitution_score)
     } else if insertion_score >= deletion_score {
@@ -131,16 +132,16 @@ fn min_score(s1: FScore, s2: FScore) -> FScore {
     s1.min(s2)
 }
 
-pub fn insertion(score: FScore) -> Element {
-    Element::from(Op::INSERT, score)
+pub fn insertion(score: FScore) -> ScoredOp {
+    ScoredOp::from(Op::INSERT, score)
 }
 
-pub fn deletion(score: FScore) -> Element {
-    Element::from(Op::DELETE, score)
+pub fn deletion(score: FScore) -> ScoredOp {
+    ScoredOp::from(Op::DELETE, score)
 }
 
-pub fn substitution(score: FScore) -> Element {
-    Element::from(Op::MATCH, score)
+pub fn substitution(score: FScore) -> ScoredOp {
+    ScoredOp::from(Op::MATCH, score)
 }
 
 #[cfg(test)]
@@ -150,7 +151,7 @@ mod tests {
     use crate::aligner::Aligner;
     use crate::matrix;
     use crate::alignment::Alignment;
-    use crate::element::{FScore, Element, Triple};
+    use crate::element::{FScore, ScoredOp, Triple};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -163,12 +164,12 @@ mod tests {
         }
     };
 
-    fn with_inf(m: Element) -> Triple {
-        Triple::from(m, Element::inf(), Element::inf())
+    fn with_inf(m: ScoredOp) -> Triple {
+        Triple::from(m, ScoredOp::inf(), ScoredOp::inf())
     }
 
-    fn with_zeros(m: Element) -> Triple {
-        Triple::from(m, Element::default(), Element::default())
+    fn with_zeros(m: ScoredOp) -> Triple {
+        Triple::from(m, ScoredOp::default(), ScoredOp::default())
     }
 
     #[test]

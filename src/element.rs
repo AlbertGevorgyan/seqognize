@@ -12,22 +12,22 @@ pub enum Op {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Element {
+pub struct ScoredOp {
     pub op: Op,
     pub score: FScore,
 }
 
-impl Element {
-    pub fn from(op: Op, score: FScore) -> Element {
-        Element { op, score }
+impl ScoredOp {
+    pub fn from(op: Op, score: FScore) -> ScoredOp {
+        ScoredOp { op, score }
     }
 
-    pub fn inf() -> Element {
-        Element::from(Op::START, NEG_INFINITY)
+    pub fn inf() -> ScoredOp {
+        ScoredOp::from(Op::START, NEG_INFINITY)
     }
 }
 
-impl Add<FScore> for Element {
+impl Add<FScore> for ScoredOp {
     type Output = FScore;
 
     fn add(self, rhs: FScore) -> Self::Output {
@@ -35,7 +35,7 @@ impl Add<FScore> for Element {
     }
 }
 
-impl Default for Element {
+impl Default for ScoredOp {
     fn default() -> Self {
         Self::from(Op::START, 0.0)
     }
@@ -43,13 +43,13 @@ impl Default for Element {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Triple {
-    pub m: Element,
-    pub x: Element,
-    pub y: Element,
+    pub m: ScoredOp,
+    pub x: ScoredOp,
+    pub y: ScoredOp,
 }
 
 impl Triple {
-    pub fn from(m: Element, x: Element, y: Element) -> Triple {
+    pub fn from(m: ScoredOp, x: ScoredOp, y: ScoredOp) -> Triple {
         Triple { m, x, y }
     }
 }
@@ -57,9 +57,9 @@ impl Triple {
 impl Default for Triple {
     fn default() -> Self {
         Self::from(
-            Element::default(),
-            Element::default(),
-            Element::default(),
+            ScoredOp::default(),
+            ScoredOp::default(),
+            ScoredOp::default(),
         )
     }
 }

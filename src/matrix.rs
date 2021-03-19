@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use ndarray::{Array2, FixedInitializer, arr2};
+use ndarray::Array2;
 use crate::element::{Op, Triple, Element};
 
 pub type Idx = (usize, usize);

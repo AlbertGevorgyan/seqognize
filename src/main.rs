@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-extern crate ndarray;
 use seqognize::nt_aligner::{GlobalNtAligner, NtAlignmentConfig};
 use seqognize::aligner::Aligner;
 use clap::{App, Arg, ArgMatches};

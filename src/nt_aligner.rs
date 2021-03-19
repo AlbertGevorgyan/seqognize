@@ -145,12 +145,12 @@ pub fn substitution(score: FScore) -> Element {
 
 #[cfg(test)]
 mod tests {
+    use ndarray::array;
     use crate::nt_aligner::{GlobalNtAligner, NtAlignmentConfig, deletion, insertion, substitution};
     use crate::aligner::Aligner;
     use crate::matrix;
     use crate::alignment::Alignment;
     use crate::element::{FScore, Element, Triple};
-    use ndarray::array;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {

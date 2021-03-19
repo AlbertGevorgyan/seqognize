@@ -93,7 +93,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                     mtx[(row, col - 1)].m +
                         self.config.get_subject_gap_opening_penalty(col),
                     mtx[(row, col - 1)].y +
-                        self.config.get_subject_gap_extension_penalty(col)
+                        self.config.get_subject_gap_extension_penalty(col),
                 );
                 mtx[(row, col)] = Triple::from(m, insertion(x), deletion(y));
             }
@@ -204,12 +204,10 @@ mod tests {
 
     #[test]
     fn test_fill_with_match() {
-        let mut mtx = matrix::from_elements(
-            &[
-                [Triple::default(), with_inf(deletion(-1.0))],
-                [with_inf(insertion(-1.0)), with_zeros(substitution(0.0))]
-            ]
-        );
+        let mut mtx = array![
+            [Triple::default(), with_inf(deletion(-1.0))],
+            [with_inf(insertion(-1.0)), with_zeros(substitution(0.0))]
+        ];
         ALIGNER.fill(&mut mtx, "A".as_bytes(), "A".as_bytes());
         assert_eq!(
             mtx[(1, 1)],
@@ -219,12 +217,10 @@ mod tests {
 
     #[test]
     fn test_trace_back_snp() {
-        let mtx = matrix::from_elements(
-            &[
-                [Triple::default(), with_inf(deletion(-1.0))],
-                [with_inf(insertion(-1.0)), with_zeros(substitution(1.0))]
-            ]
-        );
+        let mtx = array![
+            [Triple::default(), with_inf(deletion(-1.0))],
+            [with_inf(insertion(-1.0)), with_zeros(substitution(1.0))]
+        ];
         assert_eq!(
             ALIGNER.trace_back(&mtx, (1, 1), "A".as_bytes(), "A".as_bytes()),
             Alignment::from("A", "A", 1.0)
@@ -233,12 +229,10 @@ mod tests {
 
     #[test]
     fn test_trace_back_insertion() {
-        let mtx = matrix::from_elements(
-            &[
-                [Triple::default()],
-                [with_inf(insertion(-1.0))]
-            ]
-        );
+        let mtx = array![
+            [Triple::default()],
+            [with_inf(insertion(-1.0))]
+        ];
         assert_eq!(
             ALIGNER.trace_back(&mtx, (1, 0), &['A' as u8], &[]),
             Alignment::from("A", "_", -1.0)
@@ -247,11 +241,7 @@ mod tests {
 
     #[test]
     fn test_trace_back_deletion() {
-        let mtx = matrix::from_elements(
-            &[
-                [Triple::default(), with_inf(deletion(-1.0))]
-            ]
-        );
+        let mtx = array![[Triple::default(), with_inf(deletion(-1.0))]];
         assert_eq!(
             ALIGNER.trace_back(&mtx, (0, 1), &[], &['A' as u8]),
             Alignment::from("_", "A", -1.0)

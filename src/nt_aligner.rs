@@ -4,7 +4,7 @@ use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
 use crate::iterators::{accumulate, set_accumulated};
-use crate::element::{FScore, ScoredOp, Op, Triple};
+use crate::element::{FScore, ScoredOp, Op, El};
 
 
 pub struct NtAlignmentConfig {
@@ -56,7 +56,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_subject_gap_opening_penalty(n),
             ),
             mtx.row_mut(0).iter_mut(),
-            |s| Triple::from(deletion(s), ScoredOp::inf(), ScoredOp::inf()),
+            |s| El::from(deletion(s), ScoredOp::inf(), ScoredOp::inf()),
         )
     }
 
@@ -67,7 +67,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                 |n| self.config.get_reference_gap_opening_penalty(n),
             ),
             mtx.column_mut(0).iter_mut(),
-            |s| Triple::from(insertion(s), ScoredOp::inf(), ScoredOp::inf()),
+            |s| El::from(insertion(s), ScoredOp::inf(), ScoredOp::inf()),
         );
     }
 
@@ -96,7 +96,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
                     mtx[(row, col - 1)].y +
                         self.config.get_subject_gap_extension_penalty(col),
                 );
-                mtx[(row, col)] = Triple::from(m, insertion(x), deletion(y));
+                mtx[(row, col)] = El::from(m, insertion(x), deletion(y));
             }
         }
     }
@@ -151,7 +151,7 @@ mod tests {
     use crate::aligner::Aligner;
     use crate::matrix;
     use crate::alignment::Alignment;
-    use crate::element::{FScore, ScoredOp, Triple};
+    use crate::element::{FScore, ScoredOp, El};
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -164,12 +164,12 @@ mod tests {
         }
     };
 
-    fn with_inf(m: ScoredOp) -> Triple {
-        Triple::from(m, ScoredOp::inf(), ScoredOp::inf())
+    fn with_inf(m: ScoredOp) -> El {
+        El::from(m, ScoredOp::inf(), ScoredOp::inf())
     }
 
-    fn with_zeros(m: ScoredOp) -> Triple {
-        Triple::from(m, ScoredOp::default(), ScoredOp::default())
+    fn with_zeros(m: ScoredOp) -> El {
+        El::from(m, ScoredOp::default(), ScoredOp::default())
     }
 
     #[test]
@@ -178,7 +178,7 @@ mod tests {
         ALIGNER.fill_top_row(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Triple::default()
+            El::default()
         );
         for i in 1..3 {
             assert_eq!(
@@ -194,7 +194,7 @@ mod tests {
         ALIGNER.fill_left_column(&mut mtx);
         assert_eq!(
             *mtx.get((0, 0)).unwrap(),
-            Triple::default()
+            El::default()
         );
         for i in 1..3 {
             assert_eq!(
@@ -207,7 +207,7 @@ mod tests {
     #[test]
     fn test_fill_with_match() {
         let mut mtx = array![
-            [Triple::default(), with_inf(deletion(-1.0))],
+            [El::default(), with_inf(deletion(-1.0))],
             [with_inf(insertion(-1.0)), with_zeros(substitution(0.0))]
         ];
         ALIGNER.fill(&mut mtx, "A".as_bytes(), "A".as_bytes());
@@ -220,7 +220,7 @@ mod tests {
     #[test]
     fn test_trace_back_snp() {
         let mtx = array![
-            [Triple::default(), with_inf(deletion(-1.0))],
+            [El::default(), with_inf(deletion(-1.0))],
             [with_inf(insertion(-1.0)), with_zeros(substitution(1.0))]
         ];
         assert_eq!(
@@ -232,7 +232,7 @@ mod tests {
     #[test]
     fn test_trace_back_insertion() {
         let mtx = array![
-            [Triple::default()],
+            [El::default()],
             [with_inf(insertion(-1.0))]
         ];
         assert_eq!(
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_trace_back_deletion() {
-        let mtx = array![[Triple::default(), with_inf(deletion(-1.0))]];
+        let mtx = array![[El::default(), with_inf(deletion(-1.0))]];
         assert_eq!(
             ALIGNER.trace_back(&mtx, (0, 1), &[], &['A' as u8]),
             Alignment::from("_", "A", -1.0)

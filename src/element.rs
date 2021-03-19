@@ -42,19 +42,19 @@ impl Default for ScoredOp {
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Triple {
+pub struct El {
     pub m: ScoredOp,
     pub x: ScoredOp,
     pub y: ScoredOp,
 }
 
-impl Triple {
-    pub fn from(m: ScoredOp, x: ScoredOp, y: ScoredOp) -> Triple {
-        Triple { m, x, y }
+impl El {
+    pub fn from(m: ScoredOp, x: ScoredOp, y: ScoredOp) -> El {
+        El { m, x, y }
     }
 }
 
-impl Default for Triple {
+impl Default for El {
     fn default() -> Self {
         Self::from(
             ScoredOp::default(),

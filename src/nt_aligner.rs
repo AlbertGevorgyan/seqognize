@@ -150,6 +150,7 @@ mod tests {
     use crate::matrix;
     use crate::alignment::Alignment;
     use crate::element::{FScore, Element, Triple};
+    use ndarray::array;
 
     const ALIGNER: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {

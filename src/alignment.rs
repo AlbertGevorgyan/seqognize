@@ -9,13 +9,15 @@ pub const GAP: char = '_';
 pub struct Anchor {
     pub idx: Idx,
     pub op: Op,
+    pub s: u8,
+    pub r: u8,
 }
 
 impl Anchor {
-    const START: Self = Self { idx: (0, 0), op: Op::START };
+    const START: Self = Self { idx: (0, 0), op: Op::START, r: 0, s: 0 };
 
-    fn from(idx: Idx, op: Op) -> Self {
-        Anchor { idx, op }
+    fn from(idx: Idx, op: Op, s: char, r: char) -> Self {
+        Anchor { idx, op, s: s as u8, r: r as u8 }
     }
 }
 
@@ -33,53 +35,62 @@ impl Alignment {
         }
     }
 
-    pub fn pairs(&self, reference: &str, subject: &str) -> impl Iterator<Item=(char, char)> + '_ {
-        let rs: Vec<char> = reference.chars().collect();
-        let ss: Vec<char> = subject.chars().collect();
+    pub fn pairs(&self, match_symbol: char) -> impl Iterator<Item=(char, char, char)> + '_ {
         self.anchors
             .iter()
             .skip(1)
-            .map(move |a| match a.op {
-                Op::START => ('_', '_'),
-                Op::MATCH => (rs[a.idx.1 - 1], ss[a.idx.0 - 1]),
-                Op::INSERT => (GAP, ss[a.idx.0 - 1]),
-                Op::DELETE => (rs[a.idx.1 - 1], GAP)
-            })
+            .map(move |a| (
+                a.s as char,
+                if a.s == a.r { match_symbol } else { ' ' },
+                a.r as char
+            ))
     }
 
-    pub fn print_horizontal(&self, reference: &str, subject: &str) {
-        let als = self.aligned_sequences(&reference, &subject);
-        println!("{:?}", als.0);
-        println!("{:?}", als.1);
+    pub fn print_horizontal(&self) {
+        let als = self.aligned_sequences();
+        println!("{}", als.0);
+        println!("{}", als.1);
+        println!("{}", als.2);
     }
 
-    pub fn print_vertical(&self, r: &str, s: &str) {
-        self.pairs(r, s)
-            .for_each(|p| println!("{:?} {:?}", p.0, p.1));
+    pub fn print_vertical(&self) {
+        self.pairs('-')
+            .for_each(|p| println!("{} {} {}", p.0, p.1, p.2));
     }
 
-    pub fn aligned_sequences(&self, reference: &str, subject: &str) -> (String, String) {
-        let pairs: Vec<(char, char)> = self.pairs(reference, subject).collect();
+    pub fn aligned_sequences(&self) -> (String, String, String) {
+        let pairs: Vec<(char, char, char)> = self.pairs('|').collect();
         (
             pairs.iter().map(|p| p.0).collect(),
-            pairs.iter().map(|p| p.1).collect()
+            pairs.iter().map(|p| p.1).collect(),
+            pairs.iter().map(|p| p.2).collect()
         )
     }
 }
 
-pub struct AlignmentBuilder {
+pub struct AlignmentBuilder<'a> {
     anchors: VecDeque<Anchor>,
+    subject: &'a [u8],
+    reference: &'a [u8],
 }
 
-impl AlignmentBuilder {
-    pub fn new(subject: &str, reference: &str) -> AlignmentBuilder {
+impl<'a> AlignmentBuilder<'a> {
+    pub fn new(subject: &'a [u8], reference: &'a [u8]) -> AlignmentBuilder<'a> {
         AlignmentBuilder {
             anchors: VecDeque::with_capacity(subject.len() + reference.len()),
+            subject,
+            reference,
         }
     }
 
     pub fn take(&mut self, op: Op, idx: Idx) {
-        self.anchors.push_front(Anchor { idx, op })
+        let anchor: Anchor = match op {
+            Op::MATCH => Anchor { idx, op, s: self.subject[idx.0 - 1], r: self.reference[idx.1 - 1] },
+            Op::DELETE => Anchor { idx, op, s: GAP as u8, r: self.reference[idx.1 - 1] },
+            Op::INSERT => Anchor { idx, op, s: self.subject[idx.0 - 1], r: GAP as u8 },
+            Op::START => Anchor { idx, op, s: 0, r: 0 }
+        };
+        self.anchors.push_front(anchor);
     }
 
     pub fn build(self, score: FScore) -> Alignment {
@@ -104,6 +115,8 @@ fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=
             Anchor::from(
                 inc.with(s, r),
                 op(s, r),
+                s,
+                r,
             )
         )
 }

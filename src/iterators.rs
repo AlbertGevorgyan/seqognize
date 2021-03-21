@@ -1,22 +1,7 @@
-use std::str::Bytes;
 use std::iter::{successors};
 use std::ops::Add;
 use ndarray::{Dimension};
 use ndarray::iter::IterMut;
-
-pub struct SeqIterator<'a> {
-    bytes: Bytes<'a>
-}
-
-impl SeqIterator<'_> {
-    pub fn from(seq: &str) -> SeqIterator {
-        SeqIterator { bytes: seq.bytes() }
-    }
-
-    pub fn next_byte(&mut self) -> u8 {
-        self.bytes.next().unwrap()
-    }
-}
 
 pub fn accumulate<S, V>(size: usize, supplier: S) -> impl Iterator<Item=V>
     where V: Add<V, Output=V> + Default + Copy,

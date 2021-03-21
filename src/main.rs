@@ -72,9 +72,9 @@ fn main() {
     let alignment = aligner.align(subject, reference);
     println!("Score: {:?}", alignment.score);
     if matches.is_present("vertical") {
-        alignment.print_vertical(&reference, &subject);
+        alignment.print_vertical();
     } else {
-        alignment.print_horizontal(&reference, &subject);
+        alignment.print_horizontal();
     }
 }
 

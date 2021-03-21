@@ -3,7 +3,7 @@ use crate::aligner::{Aligner};
 use crate::alignment::{Alignment, AlignmentBuilder};
 use crate::matrix::{Matrix, Idx};
 use crate::{matrix};
-use crate::iterators::{SeqIterator, accumulate, set_accumulated};
+use crate::iterators::{accumulate, set_accumulated};
 use crate::element::{FScore, Element, Op};
 
 pub struct NtAlignmentConfig {
@@ -36,9 +36,6 @@ impl From<NtAlignmentConfig> for GlobalNtAligner {
 }
 
 impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
-    fn create_mtx(&self, subject: &str, reference: &str) -> Matrix {
-        matrix::of(subject.len() + 1, reference.len() + 1)
-    }
 
     fn fill_top_row(&self, mtx: &mut Matrix) {
         set_accumulated(
@@ -62,13 +59,11 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         );
     }
 
-    fn fill(&self, mtx: &mut Matrix, subject: &str, reference: &str) {
-        let mut subject_iterator = SeqIterator::from(subject);
+    fn fill(&self, mtx: &mut Matrix, subject: &[u8], reference: &[u8]) {
         for row in 1..mtx.rows() {
-            let s = subject_iterator.next_byte();
-            let mut reference_iterator = SeqIterator::from(reference);
+            let s = subject[row - 1];
             for col in 1..mtx.cols() {
-                let r = reference_iterator.next_byte();
+                let r = reference[col - 1];
                 mtx[(row, col)] = select(
                     mtx[(row - 1, col - 1)] +
                         self.config.get_substitution_score((row, col), s, r),
@@ -85,7 +80,7 @@ impl Aligner<NtAlignmentConfig> for GlobalNtAligner {
         (mtx.rows() - 1, mtx.cols() - 1)
     }
 
-    fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &str, reference: &str) -> Alignment {
+    fn trace_back(&self, mtx: &Matrix, end_index: Idx, subject: &[u8], reference: &[u8]) -> Alignment {
         let mut builder = AlignmentBuilder::new(subject, reference);
         let mut cursor = end_index;
         while cursor != (0, 0) {
@@ -138,14 +133,6 @@ mod tests {
     };
 
     #[test]
-    fn test_create_mtx() {
-        assert_eq!(
-            ALIGNER.create_mtx("ss", "rrr"),
-            matrix::of(3, 4)
-        )
-    }
-
-    #[test]
     fn test_fill_top_row() {
         let mut mtx = matrix::of(2, 3);
         ALIGNER.fill_top_row(&mut mtx);
@@ -185,7 +172,7 @@ mod tests {
                 [insertion(-1.0), substitution(0.0)]
             ]
         );
-        ALIGNER.fill(&mut mtx, "A", "A");
+        ALIGNER.fill(&mut mtx, "A".as_bytes(), "A".as_bytes());
         assert_eq!(
             mtx[(1, 1)],
             substitution(1.0)
@@ -201,7 +188,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            ALIGNER.trace_back(&mtx, (1, 1), "A", "A"),
+            ALIGNER.trace_back(&mtx, (1, 1), "A".as_bytes(), "A".as_bytes()),
             Alignment::from("A", "A", 1.0)
         );
     }
@@ -215,7 +202,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            ALIGNER.trace_back(&mtx, (1, 0), "A", ""),
+            ALIGNER.trace_back(&mtx, (1, 0), &['A' as u8], &[]),
             Alignment::from("A", "_", -1.0)
         );
     }
@@ -228,7 +215,7 @@ mod tests {
             ]
         );
         assert_eq!(
-            ALIGNER.trace_back(&mtx, (0, 1), "", "A"),
+            ALIGNER.trace_back(&mtx, (0, 1), &[], &['A' as u8]),
             Alignment::from("_", "A", -1.0)
         );
     }

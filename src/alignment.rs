@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use crate::element::{FScore, Op};
 use crate::matrix::Idx;
 use core::iter;
@@ -24,7 +23,7 @@ impl Anchor {
 #[derive(Debug, PartialEq)]
 pub struct Alignment {
     pub score: FScore,
-    pub anchors: VecDeque<Anchor>,
+    pub anchors: Vec<Anchor>,
 }
 
 impl Alignment {
@@ -36,8 +35,8 @@ impl Alignment {
     }
 
     pub fn pairs(&self, match_symbol: char) -> impl Iterator<Item=(char, char, char)> + '_ {
-        self.anchors
-            .iter()
+        self.anchors.iter()
+            .rev()
             .skip(1)
             .map(move |a| (
                 a.s as char,
@@ -69,7 +68,7 @@ impl Alignment {
 }
 
 pub struct AlignmentBuilder<'a> {
-    anchors: VecDeque<Anchor>,
+    anchors: Vec<Anchor>,
     subject: &'a [u8],
     reference: &'a [u8],
 }
@@ -77,7 +76,7 @@ pub struct AlignmentBuilder<'a> {
 impl<'a> AlignmentBuilder<'a> {
     pub fn new(subject: &'a [u8], reference: &'a [u8]) -> AlignmentBuilder<'a> {
         AlignmentBuilder {
-            anchors: VecDeque::with_capacity(subject.len() + reference.len()),
+            anchors: Vec::with_capacity(subject.len() + reference.len()),
             subject,
             reference,
         }
@@ -90,7 +89,7 @@ impl<'a> AlignmentBuilder<'a> {
             Op::INSERT => Anchor { idx, op, s: self.subject[idx.0 - 1], r: GAP as u8 },
             Op::START => Anchor { idx, op, s: 0, r: 0 }
         };
-        self.anchors.push_front(anchor);
+        self.anchors.push(anchor);
     }
 
     pub fn build(self, score: FScore) -> Alignment {
@@ -101,10 +100,12 @@ impl<'a> AlignmentBuilder<'a> {
     }
 }
 
-fn to_anchors(subject: &str, reference: &str) -> VecDeque<Anchor> {
-    iter::once(Anchor::START)
+fn to_anchors(subject: &str, reference: &str) -> Vec<Anchor> {
+    let mut anchors: Vec<Anchor> = iter::once(Anchor::START)
         .chain(from_strings(subject, reference))
-        .collect()
+        .collect();
+    anchors.reverse();
+    anchors
 }
 
 fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=Anchor> + 'a {

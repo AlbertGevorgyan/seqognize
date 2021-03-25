@@ -5,11 +5,8 @@ use crate::matrix;
 
 pub trait Aligner<C>: From<C>
     where C: AlignmentConfig {
-    fn align(&self, subject: &str, reference: &str) -> Alignment {
-        self.align_bytes(&subject.as_bytes(), &reference.as_bytes())
-    }
 
-    fn align_bytes(&self, subject: &[u8], reference: &[u8]) -> Alignment {
+    fn align(&self, subject: &[u8], reference: &[u8]) -> Alignment {
         let mut mtx = matrix::of(subject.len() + 1, reference.len() + 1);
         self.fill_top_row(&mut mtx);
         self.fill_left_column(&mut mtx);

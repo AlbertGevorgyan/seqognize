@@ -57,8 +57,8 @@ fn main() {
             .takes_value(false))
         .get_matches();
 
-    let reference = matches.value_of("reference").unwrap();
-    let subject = matches.value_of("subject").unwrap();
+    let reference = matches.value_of("reference").unwrap().as_bytes();
+    let subject = matches.value_of("subject").unwrap().as_bytes();
 
     let aligner: GlobalNtAligner = GlobalNtAligner {
         config: NtAlignmentConfig {
@@ -69,7 +69,7 @@ fn main() {
         }
     };
 
-    let alignment = aligner.align(subject, reference);
+    let alignment = aligner.align(&subject, &reference);
     println!("Score: {:?}", alignment.score);
     if matches.is_present("vertical") {
         alignment.print_vertical();

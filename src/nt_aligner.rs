@@ -366,7 +366,7 @@ mod tests {
     #[ignore]
     fn test_affine_gap() {
         assert_eq!(
-            ALIGNER.align("A", "ACG"),
+            ALIGNER.align(b"A", b"ACG"),
             Alignment::from("A__", "ACG", -0.5)
         )
     }

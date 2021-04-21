@@ -6,14 +6,6 @@ use clap::{App, Arg, ArgMatches};
 use std::str::FromStr;
 use std::fmt::Debug;
 
-mod matrix;
-mod aligner;
-mod config;
-mod nt_aligner;
-mod alignment;
-mod iterators;
-mod element;
-
 fn main() {
     let matches = App::new("Seqognize")
         .version("1.0")

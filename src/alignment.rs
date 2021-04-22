@@ -122,7 +122,7 @@ fn from_strings<'a>(subject: &'a str, reference: &'a str) -> impl Iterator<Item=
         )
 }
 
-fn op(s: char, r: char) -> Op {
+pub fn op(s: char, r: char) -> Op {
     match (s, r) {
         (GAP, _) => Op::DELETE,
         (_, GAP) => Op::INSERT,

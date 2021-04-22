@@ -1,3 +1,9 @@
+[workspace]
+members = [
+    "seqognize-cli",
+    "seqognize-web",
+]
+
 [package]
 name = "seqognize"
 version = "0.1.0"

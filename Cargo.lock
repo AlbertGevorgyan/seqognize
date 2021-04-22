@@ -516,6 +516,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "seqognize-cli"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "seqognize",
+]
+
+[[package]]
+name = "seqognize-web"
+version = "0.1.0"
+
+[[package]]
 name = "serde"
 version = "1.0.117"
 source = "registry+https://github.com/rust-lang/crates.io-index"
